@@ -202,6 +202,47 @@ main {
 
 .btn-quiet { align-self: flex-start; box-shadow: none; background: transparent; }
 
+/* Room drawing */
+
+.room { margin: 0 0 6px; }
+.room svg { display: block; width: 100%; max-width: 340px; height: auto; margin: 0 auto; }
+.room-floor { fill: #fffaf0; stroke: var(--ink); stroke-width: 2; }
+.room-mihrab { fill: var(--gold); }
+.spot { stroke-width: 2; }
+.spot-here { fill: var(--green); stroke: var(--green); }
+.spot-coming { fill: var(--cream); stroke: var(--green); stroke-dasharray: 3 2; }
+.spot-empty { fill: none; stroke: #d8cfb5; }
+.room-more { font: 700 13px var(--body); fill: var(--green); }
+.room-curtain { fill: var(--green-light); stroke: var(--green); stroke-width: 2; }
+.room-girls { font: 700 12px var(--body); fill: var(--ink); }
+
+.room-legend {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+.room-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.key { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--green); border-radius: 3px; }
+.key-here { background: var(--green); }
+.key-coming { background: var(--cream); border-style: dashed; }
+
+/* Friends with me */
+
+.friends {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  font-weight: 700;
+}
+
+.friends .btn { width: 48px; padding: 0; font-size: 22px; }
+.friends .btn:disabled { opacity: 0.4; cursor: default; }
+.friends output { min-width: 2ch; text-align: center; font: 400 30px/1 var(--pixel); }
+
 /* I'm coming */
 
 .btn-coming { width: 100%; margin-top: 14px; }
