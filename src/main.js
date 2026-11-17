@@ -4,10 +4,10 @@ import '@fontsource/atkinson-hyperlegible/latin-700.css';
 import './style.css';
 import t from './strings.js';
 import config from './config.js';
-import { TIMES, getStatus, formatTime, formatCountdown } from './prayer.js';
-import { boardPrayer, buildSlots, prayerKey, JOIN_AHEAD_MS } from './slots.js';
+import { getStatus, formatTime, formatCountdown } from './prayer.js';
+import { boardPrayer, prayerKey, listGroups, timeChoices, nearbyGroup, JOIN_AHEAD_MS } from './groups.js';
 import { getSection, setSection } from './device.js';
-import { fetchBoard, joinSlot, cancelSpot } from './api.js';
+import { fetchBoard, joinGroup, leaveGroup } from './api.js';
 
 const app = document.getElementById('app');
 
@@ -39,7 +39,7 @@ app.innerHTML = `
 
     <section class="card next" aria-labelledby="next-title">
       <p class="label" id="next-title">${t.nextPrayer}</p>
-      <p class="next-name"><span id="next-name"></span> <span class="next-time" id="next-time"></span></p>
+      <p class="next-name"><span id="next-name"></span> <span class="next-time" id="next-time"></span> <span class="next-day" id="next-day"></span></p>
       <p class="countdown" id="countdown" role="timer"></p>
       <p class="current" id="current"></p>
     </section>
@@ -49,11 +49,6 @@ app.innerHTML = `
       <p class="hint" id="hint" role="status" aria-live="polite"></p>
       <div id="board"></div>
     </section>
-
-    <details class="card">
-      <summary class="label">${t.todayTimes}</summary>
-      <ul class="times" id="times"></ul>
-    </details>
   </main>
 
   <dialog class="card dialog" id="settings" aria-labelledby="settings-title">
@@ -81,8 +76,10 @@ const dateFmt = new Intl.DateTimeFormat('en-GB', {
 const state = {
   section: getSection(),
   key: null, // prayer the board is about, e.g. "2026-11-17:dhuhr"
-  board: null, // { slots: { [slotId]: { boys, here, girls, wait } }, mine: { slotId, state } | null }
+  board: null, // { groups: { [groupId]: { boys, here, girls, wait } }, mine: { groupId, state } | null }
   error: null,
+  suggest: null, // { pick, group }: "a group already prays at ..., join it?"
+  picking: false, // time picker opened while already in a group
 };
 
 let lastPrayerKey = '';
@@ -109,9 +106,9 @@ async function chooseSection(section) {
   state.section = section;
   setSection(section);
   showSection();
-  // Keep my spot, but under the new section.
+  // Keep my group, but under the new section.
   const mine = state.board?.mine;
-  if (changed && mine) apply(await joinSlot(section, mine.slotId, mine.state === 'going' ? 'joined' : mine.state));
+  if (changed && mine) apply(await joinGroup(section, mine.groupId, mine.state === 'going' ? 'joined' : mine.state));
   tick();
   refresh();
 }
@@ -168,81 +165,125 @@ async function refresh() {
   if (key === state.key) apply(result);
 }
 
-$('board').addEventListener('click', async (e) => {
-  const b = e.target.closest('button[data-act]');
-  if (!b || b.disabled) return;
-  const { act, slot, eta } = b.dataset;
-  if (act === 'join' && slot !== state.board?.mine?.slotId) apply(await joinSlot(state.section, slot));
-  else if (act === 'here') apply(await joinSlot(state.section, slot, 'here'));
-  else if (act === 'going') apply(await joinSlot(state.section, slot, 'going', Number(eta)));
-  else if (act === 'cancel') apply(await cancelSpot(state.key));
-});
-
-const EMPTY = { boys: 0, here: 0, girls: false, wait: null };
-
-function nowSlotHtml(s) {
-  const data = state.board?.slots[s.id] ?? EMPTY;
-  const mine = state.board?.mine?.slotId === s.id ? state.board.mine.state : null;
-  const range = `${formatTime(s.start)}–${formatTime(s.end)}`;
-
-  const counts = state.board ? `${t.boys(data.boys)} (${t.hereCount(data.here)}) · ${t.girls(data.girls)}` : state.error ? t.noData : t.loading;
-  const wait = data.wait === null ? '' : `<p class="now-wait">${t.wait(data.wait)}</p>`;
-  const me = mine ? `<p class="now-me">${t.myState[mine]}</p>` : '';
-
-  const hereBtn = mine === 'here'
-    ? ''
-    : `<button class="btn btn-primary btn-big" type="button" data-act="here" data-slot="${s.id}">${t.imHere}</button>`;
-  const going = mine === 'here' ? '' : `
-    <div class="going" role="group" aria-labelledby="going-label">
-      <span id="going-label">${t.goingNow}</span>
-      ${config.arrivalOptions.map((m) => `<button class="btn btn-small" type="button" data-act="going" data-slot="${s.id}" data-eta="${m}" aria-label="${t.goingLabel(m)}">${t.minutes(m)}</button>`).join('')}
-    </div>`;
-  const cancel = mine
-    ? `<button class="btn btn-small btn-quiet" type="button" data-act="cancel" aria-label="${t.cancelLabel(formatTime(s.start))}">${t.cancel}</button>`
-    : '';
-
-  return `<div class="now-slot${mine ? ' is-mine' : ''}">
-    <p class="now-head"><span class="tag">${t.nowTag}</span> ${range}</p>
-    <p class="now-counts">${counts}</p>
-    ${wait}${me}${hereBtn}${going}${cancel}
-  </div>`;
+async function join(groupId, joinState, eta) {
+  state.suggest = null;
+  state.picking = false;
+  apply(await joinGroup(state.section, groupId, joinState, eta));
 }
 
-function laterSlotHtml(s) {
-  const data = state.board?.slots[s.id] ?? EMPTY;
-  const mine = state.board?.mine?.slotId ?? null;
-  const isMine = s.id === mine;
-  const time = formatTime(s.start);
-  const action = isMine ? t.yourSpot
-    : !s.canJoin ? t.opensAt(formatTime(new Date(s.start - JOIN_AHEAD_MS)))
-    : mine ? t.move : t.join;
-  const counts = state.board ? `${t.boys(data.boys)} · ${t.girls(data.girls)}` : state.error ? t.noData : t.loading;
-  return `<li class="slot${isMine ? ' is-mine' : ''}">
-    <button class="slot-btn" type="button" data-act="join" data-slot="${s.id}" aria-pressed="${isMine}"${s.canJoin ? '' : ' disabled'}>
-      <span class="slot-time">${time}</span>
-      <span class="slot-counts">${counts}</span>
-      <span class="slot-action">${action}</span>
-    </button>
-    ${isMine ? `<button class="btn btn-small btn-quiet" type="button" data-act="cancel" aria-label="${t.cancelLabel(time)}">${t.cancel}</button>` : ''}
+$('board').addEventListener('click', async (e) => {
+  const b = e.target.closest('button[data-act]');
+  if (!b) return;
+  const { act, group, eta } = b.dataset;
+  const now = Date.now();
+  const groups = listGroups(currentPrayer, state.board, now);
+
+  if (act === 'join') await join(group);
+  else if (act === 'here') await join(group, 'here');
+  else if (act === 'going') await join(group, 'going', Number(eta));
+  else if (act === 'leave') { state.suggest = null; apply(await leaveGroup(state.key)); }
+  else if (act === 'open-picker') { state.picking = true; tick(); }
+  else if (act === 'no-suggest') await join(state.suggest.pick.id);
+  else if (act === 'pick') {
+    const pick = timeChoices(currentPrayer, now).find((c) => c.id === group);
+    if (!pick) return;
+    // Picking a time close to an existing group: suggest praying with them instead.
+    const near = nearbyGroup(pick.start, groups.filter((g) => g.id !== state.board?.mine?.groupId));
+    if (near && near.id !== pick.id) {
+      state.suggest = { pick, group: near };
+      tick();
+    } else {
+      await join(pick.id);
+    }
+  }
+});
+
+const minutesUntil = (date, now) => Math.ceil((date - now) / 60000);
+
+function countsHtml(g) {
+  return `<p class="g-counts">${t.boysHere(g.boys, g.here)} · ${t.girls(g.girls)}</p>`
+    + (g.wait === null ? '' : `<p class="g-wait">${t.wait(g.wait)}</p>`);
+}
+
+function whenText(g, now) {
+  return g.started ? t.prayingNow : t.startsIn(minutesUntil(g.start, now));
+}
+
+function myGroupHtml(g, mine, now) {
+  const time = formatTime(g.start);
+  const canAct = g.started && mine.state !== 'here';
+  return `<section class="group is-mine" aria-label="${t.myGroupTitle(time)}">
+    <p class="g-head"><span class="g-time">${time}</span> <span class="g-when">${whenText(g, now)}</span></p>
+    <p class="g-me">${t.myState[mine.state]}</p>
+    ${countsHtml(g)}
+    ${canAct ? `
+      <button class="btn btn-primary btn-big" type="button" data-act="here" data-group="${g.id}">${t.imHere}</button>
+      <div class="going" role="group" aria-labelledby="going-label">
+        <span id="going-label">${t.onMyWay}</span>
+        ${config.arrivalOptions.map((m) => `<button class="btn btn-small" type="button" data-act="going" data-group="${g.id}" data-eta="${m}" aria-label="${t.onMyWayLabel(m)}">${t.minutes(m)}</button>`).join('')}
+      </div>` : ''}
+    <button class="btn btn-small btn-quiet" type="button" data-act="leave" aria-label="${t.leaveLabel(time)}">${t.leave}</button>
+  </section>`;
+}
+
+function otherGroupHtml(g, hasMine, now) {
+  const time = formatTime(g.start);
+  return `<li class="group">
+    <p class="g-head"><span class="g-time">${time}</span> <span class="g-when">${whenText(g, now)}</span></p>
+    ${countsHtml(g)}
+    <button class="btn btn-small" type="button" data-act="join" data-group="${g.id}" aria-label="${t.groupLabel(time)}: ${hasMine ? t.switchGroup : t.joinGroup}">${hasMine ? t.switchGroup : t.joinGroup}</button>
   </li>`;
 }
 
-function renderBoard(prayer, slots) {
-  const current = slots.find((s) => s.isNow);
-  const later = slots.filter((s) => !s.isNow);
-  const mine = state.board?.mine;
-  const mySlot = slots.find((s) => s.id === mine?.slotId);
+function pickerHtml(choices) {
+  const s = state.suggest;
+  const suggestion = s ? `
+    <div class="suggest" role="alert">
+      <p>${t.suggest(formatTime(s.group.start))}</p>
+      <div class="suggest-buttons">
+        <button class="btn btn-primary" type="button" data-act="join" data-group="${s.group.id}">${t.suggestYes(formatTime(s.group.start))}</button>
+        <button class="btn" type="button" data-act="no-suggest">${t.suggestNo(formatTime(s.pick.start))}</button>
+      </div>
+    </div>` : '';
+  return `<h3 class="label sub-title">${t.pickTitle}</h3>${suggestion}
+    <div class="times-grid">
+      ${choices.map((c) => {
+        const label = c.isNow ? t.pickNow : formatTime(c.start);
+        const picked = s?.pick.id === c.id;
+        return `<button class="btn btn-time" type="button" data-act="pick" data-group="${c.id}" aria-pressed="${picked}" aria-label="${t.pickLabel(c.isNow ? `${t.pickNow} (${formatTime(c.start)})` : label)}">${label}</button>`;
+      }).join('')}
+    </div>`;
+}
 
-  // Imam banner: only on the boys' view, when at least one girl is in the current slot.
-  const girlsNow = Boolean(current && state.board?.slots[current.id]?.girls);
-  $('imam').hidden = !(state.section === 'boy' && girlsNow);
+function renderBoard(prayer, now) {
+  const groups = listGroups(prayer, state.board, now);
+  const mineId = state.board?.mine?.groupId;
+  const myGroup = groups.find((g) => g.id === mineId);
+  const others = groups.filter((g) => g !== myGroup);
+  // Times that already have a group are joined from the group list instead.
+  const choices = timeChoices(prayer, now).filter((c) => !groups.some((g) => g.id === c.id));
 
-  const hint = state.error ? t.errors[state.error] || t.errors.default
-    : mySlot ? (mySlot.isNow ? t.hintNow : t.hintJoined(formatTime(mySlot.start)))
-    : current ? t.hintNow : t.hintJoin;
+  // Imam banner: only on the boys' view, when a girl is in a group that is praying now.
+  $('imam').hidden = !(state.section === 'boy' && groups.some((g) => g.started && g.girls));
 
-  const html = (current ? nowSlotHtml(current) : '')
-    + (later.length ? `${current ? `<p class="label later">${t.later}</p>` : ''}<ul class="slots">${later.map(laterSlotHtml).join('')}</ul>` : '');
+  let hint;
+  if (state.error) hint = t.errors[state.error] || t.errors.default;
+  else if (!state.board) hint = t.loading;
+  else if (myGroup) hint = myGroup.started ? t.hintMineNow : t.hintMineLater(formatTime(myGroup.start));
+  else if (!choices.length && !groups.length) hint = t.hintOpens(formatTime(new Date(prayer.time - JOIN_AHEAD_MS)));
+  else hint = groups.length ? t.hintChoose : t.hintEmpty;
+
+  let html = '';
+  if (myGroup) html += myGroupHtml(myGroup, state.board.mine, now);
+  if (others.length) {
+    html += `<h3 class="label sub-title">${myGroup ? t.otherGroupsTitle : t.groupsTitle}</h3>
+      <ul class="groups">${others.map((g) => otherGroupHtml(g, Boolean(myGroup), now)).join('')}</ul>`;
+  }
+  if (choices.length && state.board) {
+    html += myGroup && !state.picking
+      ? `<button class="btn btn-small btn-quiet" type="button" data-act="open-picker">${t.pickOther}</button>`
+      : pickerHtml(choices);
+  }
 
   const all = `${prayer.name}|${hint}|${html}`;
   if (all === lastBoardHtml) return; // don't redraw (keeps keyboard focus) when nothing changed
@@ -253,12 +294,15 @@ function renderBoard(prayer, slots) {
 
   // Keep focus on the same button after redrawing.
   const focused = document.activeElement?.closest?.('#board [data-act]');
-  const focusKey = focused && `[data-act="${focused.dataset.act}"]${focused.dataset.slot ? `[data-slot="${focused.dataset.slot}"]` : ''}${focused.dataset.eta ? `[data-eta="${focused.dataset.eta}"]` : ''}`;
+  const focusKey = focused && ['act', 'group', 'eta']
+    .filter((k) => focused.dataset[k]).map((k) => `[data-${k}="${focused.dataset[k]}"]`).join('');
   $('board').innerHTML = html;
   if (focusKey) $('board').querySelector(focusKey)?.focus();
 }
 
 // ---------- Clock ----------
+
+let currentPrayer = null;
 
 function tick() {
   if (!state.section) return;
@@ -270,16 +314,18 @@ function tick() {
   $('countdown').textContent = `${t.in} ${left}`;
   $('countdown').setAttribute('aria-label', t.countdownLabel(nextName, left));
 
-  const prayer = boardPrayer(s, now.getTime());
-  const key = prayerKey(prayer);
+  currentPrayer = boardPrayer(s, now.getTime());
+  const key = prayerKey(currentPrayer);
   if (key !== state.key) {
     // A new prayer: the board starts fresh.
     state.key = key;
     state.board = null;
     state.error = null;
+    state.suggest = null;
+    state.picking = false;
     refresh();
   }
-  renderBoard(prayer, buildSlots(prayer, now.getTime()));
+  renderBoard(currentPrayer, now.getTime());
 
   // The rest only changes when the prayer changes.
   const prayerState = `${s.date}|${s.current}|${s.next.name}`;
@@ -287,17 +333,10 @@ function tick() {
   lastPrayerKey = prayerState;
 
   $('next-name').textContent = nextName;
-  $('next-time').textContent = formatTime(s.next.time) + (s.next.tomorrow ? ` (${t.tomorrow})` : '');
+  $('next-time').textContent = formatTime(s.next.time);
+  $('next-day').textContent = s.next.tomorrow ? t.tomorrow : '';
   $('current').textContent = `${t.now}: ${s.current ? t.names[s.current] : t.noCurrent}`;
   $('date').textContent = dateFmt.format(now);
-
-  $('times').innerHTML = TIMES.map((name) => {
-    const isNow = name === s.current;
-    return `<li class="${isNow ? 'is-now' : ''}${name === 'sunrise' ? ' is-minor' : ''}"${isNow ? ' aria-current="time"' : ''}>
-      <span class="t-name">${t.names[name]}${isNow ? ` <span class="tag">${t.nowTag}</span>` : ''}</span>
-      <span class="t-time">${formatTime(s.times[name])}</span>
-    </li>`;
-  }).join('');
 }
 
 showSection();

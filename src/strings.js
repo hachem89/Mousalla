@@ -8,9 +8,7 @@ export default {
   tomorrow: 'tomorrow',
   in: 'in',
   now: 'Now',
-  nowTag: 'now',
   noCurrent: 'Night',
-  todayTimes: "Today's times",
   footer: 'Times for INSAT, Tunis',
   countdownLabel: (name, time) => `${name} in ${time}`,
   names: {
@@ -24,7 +22,7 @@ export default {
 
   // First launch and settings
   askTitle: 'Boy or Girl?',
-  askWhy: 'So the board can show who is coming. Girls are never counted: everyone only sees "Girls: Yes" or "No".',
+  askWhy: 'So others know who is coming. Girls are never counted: everyone only sees "Girls: Yes" or "No".',
   boy: 'Boy',
   girl: 'Girl',
   settings: 'Settings',
@@ -32,42 +30,66 @@ export default {
   iAm: 'I am a',
   close: 'Close',
   privacyNote: 'No account, no name, no location. This choice stays on this phone.',
+  install: 'Install app',
 
   // Board
-  boardTitle: (name) => `${name}: who's coming?`,
+  boardTitle: (name) => `${name}: who's praying?`,
   boys: (n) => `Boys: ${n}`,
+  boysHere: (n, here) => (here > 0 ? `Boys: ${n} (${here} already here)` : `Boys: ${n}`),
   girls: (yes) => `Girls: ${yes ? 'Yes' : 'No'}`,
-  loading: 'Loading…',
-  noData: 'No data',
-  join: 'Join',
-  move: 'Move here',
-  yourSpot: 'Your spot ✓',
-  cancel: 'Cancel',
-  cancelLabel: (time) => `Cancel my spot at ${time}`,
-  opensAt: (time) => `Opens ${time}`,
-  hintJoin: 'Tap a time to say you will pray then.',
-  hintJoined: (time) => `You're in the ${time} group. Tap another time to move.`,
-  hintNow: "Praying now? Say you're here, or that you're on your way.",
-  later: 'Later',
+  startsIn: (min) => (min <= 1 ? 'Starts in 1 min' : `Starts in ${min} min`),
+  prayingNow: 'Praying now',
+  wait: (min) => (min > 0 ? `Someone is on the way. Wait about ${min} min.` : 'Someone is arriving now. Wait for them.'),
 
-  // Current slot
-  hereCount: (n) => `${n} here`,
-  wait: (min) => (min > 0 ? `Someone is on the way: wait about ${min} min.` : 'Someone is arriving now: wait for them.'),
-  imHere: "I'm here",
-  goingNow: 'Going now:',
-  minutes: (m) => `${m} min`,
-  goingLabel: (m) => `Going now, arriving in ${m} minutes`,
+  // Hints above the board
+  loading: 'Loading the board…',
+  hintEmpty: "Nobody has picked a time yet. Choose when you'll pray, and others can join you.",
+  hintChoose: "Join a group below, or choose your own time.",
+  hintMineLater: (time) => `You'll pray at ${time}. Others can see it and join you.`,
+  hintMineNow: "It's time! Tap \"I'm here\" when you arrive.",
+  hintOpens: (time) => `You can choose a time from ${time}.`,
+
+  // My group
+  myGroupTitle: (time) => `You pray at ${time}`,
   myState: {
-    joined: 'Your spot ✓',
-    going: "You're on the way ✓",
+    joined: "You're in this group ✓",
+    going: "You're on your way ✓",
     here: "You're here ✓",
+  },
+  imHere: "I'm here",
+  onMyWay: 'On my way, arriving in:',
+  minutes: (m) => `${m} min`,
+  onMyWayLabel: (m) => `On my way, arriving in ${m} minutes`,
+  leave: "I can't come",
+  leaveLabel: (time) => `Leave the ${time} group`,
+
+  // Other groups
+  groupsTitle: 'Groups',
+  otherGroupsTitle: 'Other groups',
+  groupLabel: (time) => `${time} group`,
+  joinGroup: 'Pray with them',
+  switchGroup: 'Switch to this group',
+
+  // Choosing a time
+  pickTitle: "When will you pray?",
+  pickOther: 'Choose a different time',
+  pickNow: 'Now',
+  pickLabel: (time) => `Pray at ${time}`,
+  suggest: (time) => `A group already prays at ${time}. Pray with them?`,
+  suggestYes: (time) => `Yes, join ${time}`,
+  suggestNo: (time) => `No, keep ${time}`,
+
+  errors: {
+    offline: "Offline: can't reach the board. Prayer times still work. Retrying…",
+    too_many_requests: 'Too many taps. Wait a minute.',
+    board_full: 'The board is full right now. Try again soon.',
+    not_started: 'This group has not started yet.',
+    default: 'Something went wrong. Try again.',
   },
 
   // Imam banner (boys only)
   imamTitle: 'Pray aloud',
   imamText: 'Girls are praying behind you today. Please pray aloud.',
-
-  install: 'Install app',
 
   // Printable poster for the prayer room
   poster: {
@@ -77,16 +99,8 @@ export default {
     steps: [
       'Scan the code',
       'Choose Boy or Girl',
-      'Tap the time you will pray, or "I\'m here"',
+      'Join a group, or choose the time you will pray',
     ],
     privacy: 'No account, no name, no location. Girls are never counted: only "Yes" or "No" is shown.',
-  },
-
-  errors: {
-    offline: "Offline: can't reach the board. Prayer times still work. Retrying…",
-    too_many_requests: 'Too many taps. Wait a minute.',
-    board_full: 'The board is full right now. Try again soon.',
-    not_started: 'This time has not started yet.',
-    default: 'Something went wrong. Try again.',
   },
 };

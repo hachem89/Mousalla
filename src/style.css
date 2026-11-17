@@ -1,6 +1,5 @@
 :root {
   --cream: #f6efdc;
-  --cream-dark: #ebe0c2;
   --green: #1f4d3a;
   --green-light: #d9e6d3;
   --gold: #c9a227;
@@ -81,6 +80,7 @@ main {
 }
 
 .next-time { color: var(--gold); }
+.next-day { font: 700 16px/1 var(--body); }
 
 .countdown {
   font: 600 26px/1.2 var(--pixel);
@@ -148,75 +148,47 @@ main {
 
 /* Board */
 
-.hint { margin: 4px 0 8px; font-size: 15px; }
+.hint { margin: 4px 0 10px; font-size: 16px; }
 .hint.is-error { font-weight: 700; color: #8a1c1c; }
 
-.slots {
+.sub-title { margin: 16px 0 8px; }
+
+.groups {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
-.slot { display: flex; gap: 8px; }
-
-.slot-btn {
-  flex: 1;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-areas: 'time action' 'counts counts';
-  align-items: center;
-  gap: 2px 10px;
-  min-height: 52px;
-  padding: 6px 10px;
-  font: 16px/1.2 var(--body);
-  color: var(--ink);
-  text-align: left;
+.group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 10px 12px;
   background: var(--cream);
   border: 2px solid var(--ink);
   border-radius: 6px;
-  cursor: pointer;
 }
 
-.slot-btn:disabled { cursor: default; color: #555; border-style: dashed; }
+.g-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.g-time { font: 600 26px/1 var(--pixel); font-variant-numeric: tabular-nums; }
+.g-when { font-weight: 700; color: var(--green); }
+.g-wait { font-weight: 700; color: #6b4e00; }
+.g-wait::before { content: '⏳ ' / ''; }
+.g-me { font-weight: 700; color: var(--green); }
 
-.slot-time { grid-area: time; white-space: nowrap; font: 700 18px/1 var(--body); font-variant-numeric: tabular-nums; }
+/* My group */
 
-.slot-counts { grid-area: counts; }
-
-.slot-action {
-  grid-area: action;
-  font-weight: 700;
-  color: var(--green);
-}
-
-.slot.is-mine .slot-btn {
-  color: var(--cream);
-  background: var(--green);
-  box-shadow: 3px 3px 0 var(--gold);
-}
-
-.slot.is-mine .slot-action { color: var(--cream); }
-
-/* Current slot */
-
-.now-slot {
-  display: flex;
-  flex-direction: column;
+.group.is-mine {
+  align-items: stretch;
   gap: 8px;
-  padding: 12px;
   background: var(--green-light);
-  border: 2px solid var(--green);
-  border-radius: 6px;
+  border-color: var(--green);
+  box-shadow: 3px 3px 0 var(--green);
 }
-
-.now-head { font: 700 18px/1.2 var(--body); }
-.now-counts { font-size: 17px; }
-.now-wait { font-weight: 700; color: #6b4e00; }
-.now-wait::before { content: '⏳ ' / ''; }
-.now-me { font-weight: 700; color: var(--green); }
 
 .btn-big { min-height: 60px; font-size: 22px; }
 
@@ -233,7 +205,30 @@ main {
 
 .btn-quiet { align-self: flex-start; box-shadow: none; background: transparent; }
 
-.later { margin: 14px 0 8px; }
+/* Choosing a time */
+
+.times-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 8px;
+}
+
+.btn-time { padding: 0 6px; font-variant-numeric: tabular-nums; }
+
+.suggest {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 12px;
+  font-weight: 700;
+  background: #fff6d6;
+  border: 2px solid var(--gold);
+  border-radius: 6px;
+}
+
+.suggest-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.suggest-buttons .btn { flex: 1 1 140px; }
 
 /* Imam banner */
 
@@ -255,19 +250,6 @@ main {
 
 .banner-title::before { content: '🔊 ' / ''; }
 
-details summary {
-  display: flex;
-  align-items: center;
-  min-height: 48px;
-  margin: -8px 0;
-  cursor: pointer;
-}
-
-details summary::before { content: '▸ ' / ''; margin-right: 6px; }
-details[open] summary::before { content: '▾ ' / ''; }
-details summary::-webkit-details-marker { display: none; }
-details summary { list-style: none; }
-
 .dialog {
   max-width: 400px;
   width: calc(100% - 32px);
@@ -276,48 +258,6 @@ details summary { list-style: none; }
 
 .dialog[open] { display: flex; flex-direction: column; gap: 14px; }
 .dialog::backdrop { background: rgb(27 27 27 / 0.5); }
-
-.times {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-}
-
-.times li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  min-height: 40px;
-  padding: 0 8px;
-  border-bottom: 2px dashed var(--cream-dark);
-}
-
-.times li:last-child { border-bottom: 0; }
-
-.times .is-minor { color: #555; font-size: 16px; }
-
-.times .is-now {
-  background: var(--green-light);
-  border: 2px solid var(--green);
-  border-radius: 4px;
-  font-weight: 700;
-}
-
-.t-time {
-  font: 700 20px/1 var(--body);
-  font-variant-numeric: tabular-nums;
-}
-
-.tag {
-  display: inline-block;
-  margin-left: 6px;
-  padding: 0 6px;
-  font-size: 13px;
-  text-transform: uppercase;
-  color: var(--cream);
-  background: var(--green);
-  border-radius: 3px;
-}
 
 .foot {
   margin-top: auto;
@@ -331,7 +271,7 @@ details summary { list-style: none; }
   outline-offset: 3px;
 }
 
-.next :focus-visible, .slot.is-mine :focus-visible { outline-color: var(--gold); }
+.next :focus-visible { outline-color: var(--gold); }
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
