@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import express from 'express';
 import serverConfig from './config.js';
+import appConfig from '../src/config.js';
 import { createBoard, parseGroup, isPrayerKey, SECTIONS, STATES } from './board.js';
 
 const TOKEN_RE = /^[a-f0-9]{32}$/;
@@ -72,6 +73,8 @@ export function createApp({ now = () => Date.now(), staticDir, config = serverCo
     if (!STATES.includes(state)) return fail(res, 400, 'bad_state');
     const group = parseGroup(groupId, t);
     if (!group) return fail(res, 400, 'bad_group');
+    // "I'm coming" means arriving in about 2 minutes: only for a group that is still on by then.
+    if (state === 'going' && group.end - t < appConfig.comingMinutes * 60000) return fail(res, 400, 'too_late');
     if (!board.join(req.tokenHash, section, group, t, state)) return fail(res, 503, 'board_full');
     res.json(board.view(req.tokenHash, group.prayer, t));
   });

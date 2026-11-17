@@ -270,6 +270,15 @@ describe("I'm coming", () => {
     expect((await board(newToken())).body.groups).toEqual({});
   });
 
+  it('is refused for a group that ends before you can arrive (less than 2 minutes left)', async () => {
+    clock = tunis('12:17:01'); // group 12:04 ends 12:19
+    const r = await coming(newToken(), 'boy', GROUP_A);
+    expect(r.status).toBe(400);
+    expect(r.body.error).toBe('too_late');
+    clock = tunis('12:17:00');
+    expect((await coming(newToken(), 'boy', GROUP_A)).status).toBe(200);
+  });
+
   it('can start a new group a few minutes from now', async () => {
     const r = await coming(newToken(), 'boy', '2026-11-17:dhuhr:12:08');
     expect(r.status).toBe(200);
