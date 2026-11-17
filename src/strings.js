@@ -46,10 +46,33 @@ export default {
   opensAt: (time) => `Opens ${time}`,
   hintJoin: 'Tap a time to say you will pray then.',
   hintJoined: (time) => `You're in the ${time} group. Tap another time to move.`,
+  hintNow: "Praying now? Say you're here, or that you're on your way.",
+  later: 'Later',
+
+  // Current slot
+  hereCount: (n) => `${n} here`,
+  wait: (min) => (min > 0 ? `Someone is on the way: wait about ${min} min.` : 'Someone is arriving now: wait for them.'),
+  imHere: "I'm here",
+  goingNow: 'Going now:',
+  minutes: (m) => `${m} min`,
+  goingLabel: (m) => `Going now, arriving in ${m} minutes`,
+  myState: {
+    joined: 'Your spot ✓',
+    going: "You're on the way ✓",
+    here: "You're here ✓",
+  },
+
+  // Imam banner (boys only)
+  imamTitle: 'Pray aloud',
+  imamText: 'Girls are praying behind you today. Please pray aloud.',
+
+  install: 'Install app',
+
   errors: {
-    offline: "Can't reach the board. Retrying…",
+    offline: "Offline: can't reach the board. Prayer times still work. Retrying…",
     too_many_requests: 'Too many taps. Wait a minute.',
     board_full: 'The board is full right now. Try again soon.',
+    not_started: 'This time has not started yet.',
     default: 'Something went wrong. Try again.',
   },
 };

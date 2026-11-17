@@ -192,15 +192,68 @@ main {
   color: var(--green);
 }
 
-.slot.is-now .slot-btn { border-width: 3px; }
-
 .slot.is-mine .slot-btn {
   color: var(--cream);
   background: var(--green);
   box-shadow: 3px 3px 0 var(--gold);
 }
 
-.slot.is-mine .slot-action { color: var(--gold); }
+.slot.is-mine .slot-action { color: var(--cream); }
+
+/* Current slot */
+
+.now-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--green-light);
+  border: 2px solid var(--green);
+  border-radius: 6px;
+}
+
+.now-head { font: 700 18px/1.2 var(--body); }
+.now-counts { font-size: 17px; }
+.now-wait { font-weight: 700; color: #6b4e00; }
+.now-wait::before { content: '⏳ '; }
+.now-me { font-weight: 700; color: var(--green); }
+
+.btn-big { min-height: 60px; font-size: 22px; }
+
+.going {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.going .btn { flex: 1; padding: 0 8px; }
+.going span { width: 100%; }
+
+.btn-quiet { align-self: flex-start; box-shadow: none; background: transparent; }
+
+.later { margin: 14px 0 8px; }
+
+/* Imam banner */
+
+.banner {
+  padding: 14px 16px;
+  color: var(--ink);
+  background: var(--gold);
+  border: 3px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.banner-title {
+  font: 600 30px/1.1 var(--pixel);
+  text-transform: uppercase;
+}
+
+.banner-title::before { content: '🔊 '; }
 
 details summary {
   min-height: 32px;
