@@ -34,29 +34,27 @@ export default {
   install: 'Install app',
 
   // Board
-  boardTitle: (name) => `${name}: who's praying?`,
-  loading: 'Loading the board…',
-  boys: (n) => `Boys: ${n}`,
+  loading: 'Loading…',
   girls: (yes) => `Girls: ${yes ? 'Yes' : 'No'}`,
   prayingNow: 'Praying now',
   now: 'Now',
   nobodyYet: 'Nobody yet',
   startsIn: (min) => `Starts in ${min} min`,
-  onTheWay: 'Someone is on the way. Wait for them.',
+  onTheWay: 'Wait, someone is coming',
   groupLabel: (time) => `${time} group`,
 
   // Hints above the board
-  hintBefore: (name, time) => `${name} starts at ${time}. Join a group, or pick another time.`,
-  hintPraying: `People are praying now. Tap "I'm coming" so they wait for you.`,
-  hintNobody: `Nobody is praying right now. Tap "I'm coming" to start a group, or pick another time.`,
-  hintMineLater: (time) => `You'll pray at ${time}. Others can see it and join you.`,
-  hintMineNow: `Your group is praying now. Tap "I'm coming" so they wait for you.`,
-  hintComing: "Others can see you're coming. They'll wait for you.",
-  hintOpens: (time) => `You can join from ${time}.`,
+  hintBefore: (name, time) => `Starts at ${time}. Join a group or pick a time.`,
+  hintPraying: `People are praying. Tap "I'm coming" so they wait.`,
+  hintNobody: 'Nobody is praying. Start a group or pick a time.',
+  hintMineLater: (time) => `You pray at ${time}.`,
+  hintMineNow: 'Your group is praying now.',
+  hintComing: "They'll wait for you.",
+  hintOpens: (time) => `Opens at ${time}.`,
 
   // Sections
-  groupsTitle: (name) => `${name} groups`,
-  comingButton: "I'm coming, wait for me",
+  comingButton: "I'm coming",
+  startGroup: 'Start a group now',
 
   // "How many are you?" (boys only)
   howMany: 'How many are you?',
@@ -77,7 +75,6 @@ export default {
 
   // Group buttons and my state
   join: 'Join',
-  joinInstead: 'Join instead',
   myState: {
     joined: "You're in this group ✓",
     going: "You're coming ✓",

@@ -4,6 +4,7 @@ import { formatTime } from './prayer.js';
 import {
   prayerWindow, prayerKey, groupId, listGroups, comingGroupId, checkOwnTime, nearbyGroup, JOIN_AHEAD_MS,
 } from './groups.js';
+import config from './config.js';
 import { fetchBoard, joinGroup, leaveGroup } from './api.js';
 import { roomHtml, legendHtml } from './room.js';
 
@@ -154,15 +155,24 @@ export function initBoard() {
 
 const minutesUntil = (date, now) => Math.ceil((date - now) / MINUTE);
 
+// One group: its time, "Praying now" or "Starts in N min", and the room drawing
+// (which shows who is there, so the counts are not repeated in text).
+// Button: "I'm coming" on a group praying now, "Join" on a later one.
 function groupHtml(g, mine, now) {
   const time = formatTime(g.start);
   const isMine = mine?.groupId === g.id;
   const empty = g.boys === 0 && !g.girls;
   const when = g.started ? (empty ? t.now : t.prayingNow) : t.startsIn(minutesUntil(g.start, now));
-  const who = empty ? t.nobodyYet : `${t.boys(g.boys)} · ${t.girls(g.girls)}`;
-  const button = isMine
-    ? `<button class="btn btn-small btn-quiet" type="button" data-act="leave" aria-label="${t.leaveLabel(time)}">${t.leave}</button>`
-    : `<button class="btn btn-small" type="button" data-act="join" data-group="${g.id}" aria-label="${t.groupLabel(time)}: ${mine ? t.joinInstead : t.join}">${mine ? t.joinInstead : t.join}</button>`;
+  // "I'm coming" means arriving in about 2 minutes: only while the group is still on by then.
+  const canCome = g.started && g.start.getTime() + config.groupMinutes * MINUTE - now >= config.comingMinutes * MINUTE;
+  let button = '';
+  if (isMine) {
+    button = `<button class="btn btn-small btn-quiet" type="button" data-act="leave" aria-label="${t.leaveLabel(time)}">${t.leave}</button>`;
+  } else if (canCome) {
+    button = `<button class="btn btn-small btn-primary" type="button" data-act="coming" data-group="${g.id}" aria-label="${t.groupLabel(time)}: ${t.comingButton}">${t.comingButton}</button>`;
+  } else if (!g.started) {
+    button = `<button class="btn btn-small" type="button" data-act="join" data-group="${g.id}" aria-label="${t.groupLabel(time)}: ${t.join}">${t.join}</button>`;
+  }
   const me = isMine
     ? `<p class="g-me">${t.myState[mine.state]}${mine.friends ? ` · ${t.withFriends(mine.friends)}` : ''}</p>
       ${state.section === 'boy' ? `<button class="btn btn-small btn-quiet" type="button" data-act="change-count">${t.changeCount}</button>` : ''}`
@@ -171,13 +181,13 @@ function groupHtml(g, mine, now) {
     <div class="g-top">
       <div class="g-main">
         <p class="g-time">${time}</p>
-        <p class="g-info"><span class="g-when">${when}</span> · ${who}</p>
+        <p class="g-info"><span class="g-when">${when}</span>${empty ? ` · ${t.nobodyYet}` : ''}</p>
         ${me}
         ${g.coming ? `<p class="g-wait">${t.onTheWay}</p>` : ''}
       </div>
       ${button}
     </div>
-    ${roomHtml(g)}
+    ${empty ? '' : roomHtml(g)}
   </li>`;
 }
 
@@ -190,9 +200,10 @@ function render(prayer, now) {
   const opensAt = start - JOIN_AHEAD_MS;
   const canJoin = now >= opensAt && now < end;
 
-  // "I'm coming": to my group or the group praying now if it is still on in 2 minutes,
-  // otherwise a new group in 2 minutes.
+  // The big button only starts a new group (in 2 minutes) when nobody is praying
+  // that you could still reach; otherwise "I'm coming" is on the group itself.
   const comingId = comingGroupId(prayer, groups, now, mine?.groupId);
+  const startsNewGroup = comingId && !groups.some((g) => g.id === comingId);
 
   // Imam banner: only on the boys' view, when a girl is in a group that is praying now.
   $('imam').hidden = !(state.section === 'boy' && praying.some((g) => g.girls));
@@ -211,11 +222,11 @@ function render(prayer, now) {
   if (canJoin && state.board) {
     // Every group of this prayer, each with its room drawing.
     if (groups.length) {
-      html += `<h3 class="label sub-title">${t.groupsTitle(t.names[prayer.name])}</h3>${legendHtml()}
-        <ul class="groups">${groups.map((g) => groupHtml(g, mine, now)).join('')}</ul>`;
+      const drawn = groups.some((g) => g.boys > 0 || g.girls);
+      html += `${drawn ? legendHtml() : ''}<ul class="groups">${groups.map((g) => groupHtml(g, mine, now)).join('')}</ul>`;
     }
-    if (comingId && mine?.state !== 'going') {
-      html += `<button class="btn btn-primary btn-big btn-coming" type="button" data-act="coming" data-group="${comingId}">${t.comingButton}</button>`;
+    if (startsNewGroup && mine?.state !== 'going') {
+      html += `<button class="btn btn-primary btn-big btn-coming" type="button" data-act="coming" data-group="${comingId}">${t.startGroup}</button>`;
     }
   }
 
@@ -237,7 +248,7 @@ function render(prayer, now) {
   const all = `${prayer.name}|${hint}|${html}`;
   if (all === lastHtml) return; // don't redraw (keeps keyboard focus) when nothing changed
   lastHtml = all;
-  $('board-title').textContent = t.boardTitle(t.names[prayer.name]);
+  $('board-title').textContent = t.names[prayer.name];
   $('hint').textContent = hint;
   $('hint').classList.toggle('is-error', Boolean(state.error));
 
