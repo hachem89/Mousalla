@@ -43,6 +43,17 @@ Mousalla is one shared screen for the room, on everyone's phone:
 It needs no account and no name, and it never counts the sisters: they only
 appear as "Girls: Yes" or "No".
 
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/2-board.png" width="260" alt="Brothers' view: the Pray aloud banner, the current prayer, and a group praying now with its room drawing"></td>
+    <td align="center"><img src="docs/screenshots/4-girls-view.png" width="260" alt="Sisters' view: the same board without the banner; sisters only appear as Girls: Yes"></td>
+  </tr>
+  <tr>
+    <td align="center">Brothers' view: banner, current prayer, groups</td>
+    <td align="center">Sisters' view: same board, no counts of sisters</td>
+  </tr>
+</table>
+
 ## How to use it
 
 1. **Scan the QR code** on the poster in the prayer room, or open
@@ -67,6 +78,17 @@ appear as "Girls: Yes" or "No".
    with 3 classmates? Tap 4, and the room shows 4 places. Sisters are not
    asked.
 7. **Can't make it after all?** Tap **I can't come** in your group.
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/1-boy-or-girl.png" width="260" alt="First launch: one question, Boy or Girl"></td>
+    <td align="center"><img src="docs/screenshots/3-how-many.png" width="260" alt="How many are you? Buttons from 1 (just me) to 11"></td>
+  </tr>
+  <tr>
+    <td align="center">First launch: one question</td>
+    <td align="center">"How many are you?" (brothers only)</td>
+  </tr>
+</table>
 
 **For the imam:** count the brothers in the room and compare with the drawing.
 When there are no dashed places left, everyone who said "I'm coming" is there.
@@ -98,6 +120,8 @@ The app makes its own printable poster for the prayer room:
 1. Open https://mousalla-nvsu.onrender.com/poster.html.
 2. Click **Print this poster**. It fits one A4 page.
 3. Before hanging it, scan the QR code with a phone to check it opens the site.
+
+<p align="center"><img src="docs/screenshots/5-poster.png" width="320" alt="The printable A4 poster: logo, QR code, address and three steps"></p>
 
 The poster shows the Mousalla logo, a large QR code, the address, three steps
 (scan, choose Boy or Girl, tap "I'm coming" or pick a time) and the privacy
@@ -336,6 +360,7 @@ src/poster.js, poster.css printable QR poster
 server/                   Express server, in-memory board, rate limits
 scripts/                  print prayer times
 test/                     prayer times, groups, server
+docs/screenshots/         pictures used in this README
 render.yaml               Render deploy settings
 ```
 
