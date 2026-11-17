@@ -215,7 +215,7 @@ main {
 .now-head { font: 700 18px/1.2 var(--body); }
 .now-counts { font-size: 17px; }
 .now-wait { font-weight: 700; color: #6b4e00; }
-.now-wait::before { content: '⏳ '; }
+.now-wait::before { content: '⏳ ' / ''; }
 .now-me { font-weight: 700; color: var(--green); }
 
 .btn-big { min-height: 60px; font-size: 22px; }
@@ -253,12 +253,20 @@ main {
   text-transform: uppercase;
 }
 
-.banner-title::before { content: '🔊 '; }
+.banner-title::before { content: '🔊 ' / ''; }
 
 details summary {
-  min-height: 32px;
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  margin: -8px 0;
   cursor: pointer;
 }
+
+details summary::before { content: '▸ ' / ''; margin-right: 6px; }
+details[open] summary::before { content: '▾ ' / ''; }
+details summary::-webkit-details-marker { display: none; }
+details summary { list-style: none; }
 
 .dialog {
   max-width: 400px;
@@ -319,9 +327,11 @@ details summary {
 }
 
 :focus-visible {
-  outline: 3px solid var(--gold);
-  outline-offset: 2px;
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
 }
+
+.next :focus-visible, .slot.is-mine :focus-visible { outline-color: var(--gold); }
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
