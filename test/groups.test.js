@@ -6,7 +6,7 @@ import {
 
 const tunis = (hms, date = '2026-11-17') => new Date(`${date}T${hms}+01:00`);
 const at = (hms) => tunis(hms).getTime();
-const dhuhr = { name: 'dhuhr', time: tunis('12:04:00') }; // window: 75 min, until 13:19
+const dhuhr = { name: 'dhuhr', time: tunis('12:04:00') }; // Asr is at 14:48, so Dhuhr's window ends at 14:43
 const MAIN = '2026-11-17:dhuhr:12:04';
 
 describe('board prayer', () => {
@@ -15,16 +15,24 @@ describe('board prayer', () => {
     return boardPrayer(getStatus(now), now.getTime());
   };
 
-  it('is the current prayer while its window is open', () => {
+  it('is the current prayer until 5 minutes before the next one', () => {
     expect(board('12:30:00').name).toBe('dhuhr');
+    expect(board('14:42:59').name).toBe('dhuhr');
   });
 
-  it('is the next prayer once the window is over', () => {
-    expect(board('13:30:00').name).toBe('asr');
+  it('is the next prayer in the last 5 minutes before it', () => {
+    expect(board('14:43:00').name).toBe('asr');
   });
 
-  it("is tomorrow's Fajr late at night", () => {
-    expect(prayerKey(board('22:00:00'))).toBe('2026-11-18:fajr');
+  it('Fajr ends 5 minutes before sunrise (06:59), then the board shows Dhuhr', () => {
+    expect(board('06:50:00').name).toBe('fajr');
+    expect(board('06:55:00').name).toBe('dhuhr');
+  });
+
+  it('Isha lasts until 5 minutes before the next Fajr', () => {
+    expect(prayerKey(board('22:00:00'))).toBe('2026-11-17:isha');
+    expect(prayerKey(board('05:24:00', '2026-11-18'))).toBe('2026-11-17:isha');
+    expect(prayerKey(board('05:26:00', '2026-11-18'))).toBe('2026-11-18:fajr');
   });
 });
 
@@ -56,11 +64,11 @@ describe('groups', () => {
   it('ignores groups outside the prayer time (before the adhan or after the window)', () => {
     const d = { groups: {
       '2026-11-17:dhuhr:11:50': { boys: 2, girls: true, coming: false },
-      '2026-11-17:dhuhr:13:19': { boys: 1, girls: false, coming: false },
-      '2026-11-17:dhuhr:13:18': { boys: 1, girls: false, coming: false },
+      '2026-11-17:dhuhr:14:43': { boys: 1, girls: false, coming: false },
+      '2026-11-17:dhuhr:14:42': { boys: 1, girls: false, coming: false },
     } };
-    const g = listGroups(dhuhr, d, at('11:55:00'));
-    expect(g.map((x) => x.id)).toEqual([MAIN, '2026-11-17:dhuhr:13:18']);
+    const g = listGroups(dhuhr, d, at('12:55:00'));
+    expect(g.map((x) => x.id)).toEqual(['2026-11-17:dhuhr:14:42']);
   });
 
   it('drops groups that are over, the main group too', () => {
@@ -106,24 +114,33 @@ describe("I'm coming", () => {
 
   it('is not possible before the adhan or after the window', () => {
     expect(comingGroupId(dhuhr, groupsAt('12:00:00'), at('12:00:00'))).toBe(null);
-    expect(comingGroupId(dhuhr, groupsAt('13:19:00'), at('13:19:00'))).toBe(null);
-    expect(comingGroupId(dhuhr, groupsAt('13:17:00'), at('13:17:00'))).toBe(null);
-    expect(comingGroupId(dhuhr, groupsAt('13:16:00'), at('13:16:00'))).toBe('2026-11-17:dhuhr:13:18');
+    expect(comingGroupId(dhuhr, groupsAt('14:43:00'), at('14:43:00'))).toBe(null);
+    expect(comingGroupId(dhuhr, groupsAt('14:41:00'), at('14:41:00'))).toBe(null);
+    expect(comingGroupId(dhuhr, groupsAt('14:40:00'), at('14:40:00'))).toBe('2026-11-17:dhuhr:14:42');
   });
 });
 
 describe('own time', () => {
   const check = (value, hms) => checkOwnTime(value, dhuhr, at(hms));
 
-  it('accepts a time inside the prayer window', () => {
+  it('accepts a time inside the prayer window, up to 5 minutes before Asr', () => {
     expect(formatTime(check('12:40', '12:10:00').start)).toBe('12:40');
     expect(formatTime(check('12:10', '12:10:30').start)).toBe('12:10');
   });
 
   it('refuses times outside the window, so Dhuhr cannot be announced at Asr time', () => {
     expect(check('12:00', '11:30:00').error).toBe('outside');
-    expect(check('13:19', '12:10:00').error).toBe('outside');
-    expect(check('14:50', '12:10:00').error).toBe('outside');
+    expect(check('14:43', '13:10:00').error).toBe('outside');
+    expect(check('14:50', '13:10:00').error).toBe('outside');
+    expect(formatTime(check('14:42', '13:10:00').start)).toBe('14:42');
+  });
+
+  it('accepts Isha times after midnight, on the next day', () => {
+    const isha = { name: 'isha', time: tunis('18:38:00') };
+    const r = checkOwnTime('00:30', isha, at('23:00:00'));
+    expect(r.start).toEqual(tunis('00:30:00', '2026-11-18'));
+    expect(groupStart('2026-11-17:isha:00:30')).toEqual(tunis('00:30:00', '2026-11-18'));
+    expect(checkOwnTime('05:25', isha, at('23:00:00')).error).toBe('outside'); // Fajr is 05:30
   });
 
   it('refuses past times, empty input and times too far ahead', () => {

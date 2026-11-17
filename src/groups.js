@@ -1,5 +1,5 @@
 import config from './config.js';
-import { localDate, formatTime } from './prayer.js';
+import { localDate, formatTime, computeTimes, addDays } from './prayer.js';
 
 const MINUTE = 60000;
 export const JOIN_AHEAD_MS = 2 * 3600 * 1000; // the server accepts times up to 2 hours ahead
@@ -7,17 +7,31 @@ export const JOIN_AHEAD_MS = 2 * 3600 * 1000; // the server accepts times up to 
 // The prayer the board is about: the current one while people can still come,
 // otherwise the next one.
 export function boardPrayer(status, now, cfg = config) {
-  if (status.current) {
-    const time = status.times[status.current];
-    if (now < time.getTime() + cfg.windows[status.current] * MINUTE) return { name: status.current, time };
-  }
+  // After midnight and before Fajr, the current prayer is yesterday's Isha.
+  const current = status.current
+    ? { name: status.current, time: status.times[status.current] }
+    : { name: 'isha', time: computeTimes(addDays(status.date, -1), cfg).isha };
+  if (now < prayerWindow(current, cfg).end) return current;
   return { name: status.next.name, time: status.next.time };
 }
 
-// From the adhan to the end of the time people can still come and pray together.
+// What ends each prayer's time: the next prayer (Fajr ends at sunrise, Isha at the next Fajr).
+const ENDS_AT = { fajr: 'sunrise', dhuhr: 'asr', asr: 'maghrib', maghrib: 'isha' };
+const windowCache = new Map();
+
+// From the adhan until 5 minutes before the next prayer: the time people can pray together.
 export function prayerWindow(prayer, cfg = config) {
   const start = prayer.time.getTime();
-  return { start, end: start + cfg.windows[prayer.name] * MINUTE };
+  const cacheKey = `${start}|${prayer.name}|${cfg.endBeforeNextMinutes}`;
+  if (!windowCache.has(cacheKey)) {
+    const date = localDate(prayer.time);
+    const next = prayer.name === 'isha'
+      ? computeTimes(addDays(date, 1), cfg).fajr
+      : computeTimes(date, cfg)[ENDS_AT[prayer.name]];
+    if (windowCache.size > 50) windowCache.clear();
+    windowCache.set(cacheKey, { start, end: next.getTime() - cfg.endBeforeNextMinutes * MINUTE });
+  }
+  return windowCache.get(cacheKey);
 }
 
 // "2026-11-17:dhuhr"
@@ -30,10 +44,13 @@ export function groupId(prayer, start) {
   return `${prayerKey(prayer)}:${formatTime(start)}`;
 }
 
-// Start of a group from its id. Tunis is UTC+1 all year.
+// Start of a group from its id ("2026-11-17:isha:01:00"). Tunis is UTC+1 all year.
+// The date is the day of the adhan; Isha can go past midnight, so an Isha time
+// before noon is on the next day.
 export function groupStart(id) {
-  const [date, , hh, mm] = id.split(':');
-  return new Date(`${date}T${hh}:${mm}:00+01:00`);
+  const [date, name, hh, mm] = id.split(':');
+  const day = name === 'isha' && Number(hh) < 12 ? addDays(date, 1) : date;
+  return new Date(`${day}T${hh}:${mm}:00+01:00`);
 }
 
 // Groups of this prayer, by time, without the ones already over.
@@ -73,7 +90,7 @@ export function comingGroupId(prayer, groups, now, mineId = null, cfg = config) 
 // It must be inside the prayer's window, not in the past, and at most 2 hours ahead.
 export function checkOwnTime(value, prayer, now, cfg = config) {
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(value || '')) return { error: 'empty' };
-  const start = new Date(`${localDate(prayer.time)}T${value}:00+01:00`);
+  const start = groupStart(`${prayerKey(prayer)}:${value}`);
   const { start: from, end } = prayerWindow(prayer, cfg);
   if (start < from || start >= end) return { error: 'outside' };
   if (start.getTime() < Math.floor(now / MINUTE) * MINUTE) return { error: 'past' };

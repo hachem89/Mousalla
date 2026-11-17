@@ -27,14 +27,9 @@ export default {
   // Picking a time this close to an existing group suggests joining that group instead.
   suggestJoinMinutes: 10,
 
-  // How long after the adhan people may still come and pray together (minutes).
-  windows: {
-    fajr: 45,
-    dhuhr: 75,
-    asr: 60,
-    maghrib: 40,
-    isha: 60,
-  },
+  // People can pray together from the adhan until this many minutes before the
+  // next prayer (for Fajr: before sunrise).
+  endBeforeNextMinutes: 5,
 
   // "I'm coming, wait for me" means about this many minutes. When nobody is
   // praying, it starts a new group this many minutes from now.
