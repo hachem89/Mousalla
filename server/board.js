@@ -38,7 +38,7 @@ export function parseGroup(id, now, groupMinutes = appConfig.groupMinutes) {
 }
 
 export function createBoard({ maxEntries, cfg = appConfig }) {
-  // key "tokenHash|prayer" -> { section, groupId, state, arriveAt, expiresAt }
+  // key "tokenHash|prayer" -> { section, groupId, state, expiresAt }
   // One key per device and prayer, so a device has at most one spot per prayer.
   const entries = new Map();
   const keyOf = (tokenHash, prayer) => `${tokenHash}|${prayer}`;
@@ -49,19 +49,16 @@ export function createBoard({ maxEntries, cfg = appConfig }) {
 
   // Join a group (creating it if nobody picked that time yet), or move to it
   // if already in another group of the same prayer.
-  // state: "joined" (will pray with this group) or "going" ("I'm coming in eta minutes").
+  // state: "joined" (will pray with this group) or "going" ("I'm coming, wait for me").
   // Every spot expires when its group ends, or earlier for "going".
-  function join(tokenHash, section, group, now, state = 'joined', eta = 0) {
+  function join(tokenHash, section, group, now, state = 'joined') {
     sweep(now);
     const key = keyOf(tokenHash, group.prayer);
     if (!entries.has(key) && entries.size >= maxEntries) return false;
-    let expiresAt = group.end;
-    let arriveAt = null;
-    if (state === 'going') {
-      arriveAt = now + eta * MINUTE;
-      expiresAt = Math.min(group.end, arriveAt + cfg.goingGraceMinutes * MINUTE);
-    }
-    entries.set(key, { section, groupId: group.id, state, arriveAt, expiresAt });
+    const expiresAt = state === 'going'
+      ? Math.min(group.end, now + cfg.comingExpiresMinutes * MINUTE)
+      : group.end;
+    entries.set(key, { section, groupId: group.id, state, expiresAt });
     return true;
   }
 
@@ -73,18 +70,16 @@ export function createBoard({ maxEntries, cfg = appConfig }) {
   // What anyone may see for one prayer, per group:
   //   boys:  number of boys (joined or coming)
   //   girls: true/false only. Girls are never counted.
-  //   wait:  minutes until the last person on the way arrives, or null if nobody is on the way
+  //   coming: true/false, someone said "I'm coming, wait for me"
   function view(tokenHash, prayer, now) {
     sweep(now);
     const groups = {};
     for (const [key, e] of entries) {
       if (!key.endsWith(`|${prayer}`)) continue;
-      const s = (groups[e.groupId] ??= { boys: 0, girls: false, wait: null });
+      const s = (groups[e.groupId] ??= { boys: 0, girls: false, coming: false });
       if (e.section === 'boy') s.boys += 1;
       else s.girls = true;
-      if (e.state === 'going') {
-        s.wait = Math.max(s.wait ?? 0, Math.ceil(Math.max(0, e.arriveAt - now) / MINUTE));
-      }
+      if (e.state === 'going') s.coming = true;
     }
     const e = entries.get(keyOf(tokenHash, prayer));
     const mine = e ? { groupId: e.groupId, state: e.state } : null;

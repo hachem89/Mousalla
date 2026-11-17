@@ -2,7 +2,6 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import express from 'express';
 import serverConfig from './config.js';
-import appConfig from '../src/config.js';
 import { createBoard, parseGroup, isPrayerKey, SECTIONS, STATES } from './board.js';
 
 const TOKEN_RE = /^[a-f0-9]{32}$/;
@@ -67,14 +66,13 @@ export function createApp({ now = () => Date.now(), staticDir, config = serverCo
   });
 
   app.post('/api/join', (req, res) => {
-    const { section, groupId, state = 'joined', eta = 0 } = req.body ?? {};
+    const { section, groupId, state = 'joined' } = req.body ?? {};
     const t = now();
     if (!SECTIONS.includes(section)) return fail(res, 400, 'bad_section');
     if (!STATES.includes(state)) return fail(res, 400, 'bad_state');
-    if (state === 'going' && !appConfig.arrivalOptions.includes(eta)) return fail(res, 400, 'bad_eta');
     const group = parseGroup(groupId, t);
     if (!group) return fail(res, 400, 'bad_group');
-    if (!board.join(req.tokenHash, section, group, t, state, eta)) return fail(res, 503, 'board_full');
+    if (!board.join(req.tokenHash, section, group, t, state)) return fail(res, 503, 'board_full');
     res.json(board.view(req.tokenHash, group.prayer, t));
   });
 

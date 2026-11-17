@@ -36,10 +36,11 @@ export default {
     isha: 60,
   },
 
-  // "I'm coming in ... min" choices. A "coming" spot expires this many
-  // minutes after the announced arrival.
-  arrivalOptions: [1, 2, 5],
-  goingGraceMinutes: 5,
+  // "I'm coming, wait for me" means about this many minutes. When nobody is
+  // praying, it starts a new group this many minutes from now.
+  comingMinutes: 2,
+  // A "coming" spot expires this many minutes after the tap.
+  comingExpiresMinutes: 7,
 
   // How often the board is refreshed (milliseconds).
   pollMs: 5000,
