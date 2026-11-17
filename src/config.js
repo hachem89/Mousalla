@@ -24,9 +24,6 @@ export default {
   // A group stays on the board this many minutes after its time.
   groupMinutes: 15,
 
-  // Times offered when picking, in steps of this many minutes.
-  pickStepMinutes: 5,
-
   // Picking a time this close to an existing group suggests joining that group instead.
   suggestJoinMinutes: 10,
 
@@ -39,13 +36,10 @@ export default {
     isha: 60,
   },
 
-  // "Going now" arrival estimates (minutes). A "going" spot expires this many
-  // minutes after the estimated arrival.
-  arrivalOptions: [2, 5, 10],
+  // "I'm coming in ... min" choices. A "coming" spot expires this many
+  // minutes after the announced arrival.
+  arrivalOptions: [1, 2, 5],
   goingGraceMinutes: 5,
-
-  // An "I'm here" spot expires after this many minutes.
-  hereMinutes: 20,
 
   // How often the board is refreshed (milliseconds).
   pollMs: 5000,

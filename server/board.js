@@ -12,7 +12,7 @@ const MAX_DISTANCE = 2 * 3600 * 1000;
 const MINUTE = 60000;
 
 export const SECTIONS = ['boy', 'girl'];
-export const STATES = ['joined', 'going', 'here'];
+export const STATES = ['joined', 'going'];
 
 function validDate(date) {
   const d = new Date(`${date}T12:00:00Z`);
@@ -49,8 +49,8 @@ export function createBoard({ maxEntries, cfg = appConfig }) {
 
   // Join a group (creating it if nobody picked that time yet), or move to it
   // if already in another group of the same prayer.
-  // state: "joined" (coming later), "going" (on the way, with eta minutes) or "here".
-  // Every spot expires when its group ends, or earlier for "going" and "here".
+  // state: "joined" (will pray with this group) or "going" ("I'm coming in eta minutes").
+  // Every spot expires when its group ends, or earlier for "going".
   function join(tokenHash, section, group, now, state = 'joined', eta = 0) {
     sweep(now);
     const key = keyOf(tokenHash, group.prayer);
@@ -60,8 +60,6 @@ export function createBoard({ maxEntries, cfg = appConfig }) {
     if (state === 'going') {
       arriveAt = now + eta * MINUTE;
       expiresAt = Math.min(group.end, arriveAt + cfg.goingGraceMinutes * MINUTE);
-    } else if (state === 'here') {
-      expiresAt = Math.min(group.end, now + cfg.hereMinutes * MINUTE);
     }
     entries.set(key, { section, groupId: group.id, state, arriveAt, expiresAt });
     return true;
@@ -73,8 +71,7 @@ export function createBoard({ maxEntries, cfg = appConfig }) {
   }
 
   // What anyone may see for one prayer, per group:
-  //   boys:  number of boys (joined, going or here)
-  //   here:  number of boys who said "I'm here"
+  //   boys:  number of boys (joined or coming)
   //   girls: true/false only. Girls are never counted.
   //   wait:  minutes until the last person on the way arrives, or null if nobody is on the way
   function view(tokenHash, prayer, now) {
@@ -82,13 +79,9 @@ export function createBoard({ maxEntries, cfg = appConfig }) {
     const groups = {};
     for (const [key, e] of entries) {
       if (!key.endsWith(`|${prayer}`)) continue;
-      const s = (groups[e.groupId] ??= { boys: 0, here: 0, girls: false, wait: null });
-      if (e.section === 'boy') {
-        s.boys += 1;
-        if (e.state === 'here') s.here += 1;
-      } else {
-        s.girls = true;
-      }
+      const s = (groups[e.groupId] ??= { boys: 0, girls: false, wait: null });
+      if (e.section === 'boy') s.boys += 1;
+      else s.girls = true;
       if (e.state === 'going') {
         s.wait = Math.max(s.wait ?? 0, Math.ceil(Math.max(0, e.arriveAt - now) / MINUTE));
       }

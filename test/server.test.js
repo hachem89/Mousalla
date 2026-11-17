@@ -12,7 +12,7 @@ let server;
 let base;
 let n = 0;
 
-const group = (boys, extra = {}) => ({ boys, here: 0, girls: false, wait: null, ...extra });
+const group = (boys, extra = {}) => ({ boys, girls: false, wait: null, ...extra });
 const newToken = () => (++n).toString(16).padStart(32, 'a');
 
 async function start(config = serverConfig) {
@@ -110,7 +110,7 @@ describe('girls are never counted', () => {
     for (const r of [joined, await board(girl), await board(newToken()), await cancel(newToken())]) {
       expect(r.body.groups[GROUP_A]).toEqual(group(2, { girls: true }));
       for (const s of Object.values(r.body.groups)) {
-        expect(Object.keys(s).sort()).toEqual(['boys', 'girls', 'here', 'wait']);
+        expect(Object.keys(s).sort()).toEqual(['boys', 'girls', 'wait']);
         expect(typeof s.girls).toBe('boolean');
       }
     }
@@ -232,85 +232,62 @@ describe('abuse protection', () => {
   });
 });
 
-describe('going now and I am here', () => {
-  const go = (token, section, groupId, eta) => api(token, '/api/join', { section, groupId, state: 'going', eta });
-  const here = (token, section, groupId) => api(token, '/api/join', { section, groupId, state: 'here' });
+describe("I'm coming", () => {
+  const coming = (token, section, groupId, eta) => api(token, '/api/join', { section, groupId, state: 'going', eta });
 
   beforeEach(() => { clock = tunis('12:06:00'); });
 
-  it('shows who is here and how long to wait for people on the way', async () => {
-    await here(newToken(), 'boy', GROUP_A);
+  it('shows how long to wait for people who are coming', async () => {
     await join(newToken(), 'boy', GROUP_A);
-    await go(newToken(), 'boy', GROUP_A, 2);
+    await coming(newToken(), 'boy', GROUP_A, 1);
     const me = newToken();
-    const r = await go(me, 'boy', GROUP_A, 5);
-    expect(r.body.groups[GROUP_A]).toEqual({ boys: 4, here: 1, girls: false, wait: 5 });
+    const r = await coming(me, 'boy', GROUP_A, 5);
+    expect(r.body.groups[GROUP_A]).toEqual({ boys: 3, girls: false, wait: 5 });
     expect(r.body.mine).toEqual({ groupId: GROUP_A, state: 'going' });
 
     clock = tunis('12:09:30');
     expect((await board(newToken())).body.groups[GROUP_A].wait).toBe(2);
   });
 
-  it('girls going or here are still only yes/no', async () => {
-    await go(newToken(), 'girl', GROUP_A, 2);
+  it('girls who are coming are still only yes/no', async () => {
+    await coming(newToken(), 'girl', GROUP_A, 2);
     const a = await board(newToken());
-    await here(newToken(), 'girl', GROUP_A);
-    await here(newToken(), 'girl', GROUP_A);
+    await coming(newToken(), 'girl', GROUP_A, 2);
+    await coming(newToken(), 'girl', GROUP_A, 1);
     const b = await board(newToken());
-    expect(a.body.groups[GROUP_A]).toEqual({ boys: 0, here: 0, girls: true, wait: 2 });
-    expect(b.body.groups[GROUP_A]).toEqual({ boys: 0, here: 0, girls: true, wait: 2 });
+    expect(a.body.groups[GROUP_A]).toEqual({ boys: 0, girls: true, wait: 2 });
+    expect(b.body.groups[GROUP_A]).toEqual({ boys: 0, girls: true, wait: 2 });
   });
 
-  it('"going" expires 5 minutes after the estimated arrival', async () => {
-    await go(newToken(), 'boy', GROUP_A, 2); // arrives 12:08, expires 12:13
+  it('"coming" expires 5 minutes after the announced arrival', async () => {
+    await coming(newToken(), 'boy', GROUP_A, 2); // arrives 12:08, expires 12:13
     clock = tunis('12:12:59');
-    expect((await board(newToken())).body.groups[GROUP_A]).toEqual({ boys: 1, here: 0, girls: false, wait: 0 });
+    expect((await board(newToken())).body.groups[GROUP_A]).toEqual({ boys: 1, girls: false, wait: 0 });
     clock = tunis('12:13:00');
     expect((await board(newToken())).body.groups).toEqual({});
   });
 
-  it('"here" expires after 20 minutes, or when the group ends if sooner', async () => {
-    clock = tunis('12:20:00');
-    await here(newToken(), 'boy', GROUP_B); // group 12:19-12:34, 20 min would be 12:40
-    clock = tunis('12:33:59');
-    expect((await board(newToken())).body.groups[GROUP_B].here).toBe(1);
-    clock = tunis('12:34:00');
+  it('"coming" ends with its group if that is sooner', async () => {
+    clock = tunis('12:16:00');
+    await coming(newToken(), 'boy', GROUP_A, 5); // group 12:04 ends 12:19
+    clock = tunis('12:19:00');
     expect((await board(newToken())).body.groups).toEqual({});
   });
 
-  it('"here" lasts 20 minutes with a longer group', async () => {
-    server.close();
-    const { createBoard } = await import('../server/board.js');
-    const b = createBoard({ maxEntries: 10 });
-    const group = { id: GROUP_A, prayer: PRAYER, start: tunis('12:04:00'), end: tunis('13:04:00') };
-    b.join('x', 'boy', group, tunis('12:06:00'), 'here');
-    expect(b.view('x', PRAYER, tunis('12:25:59')).groups[GROUP_A].here).toBe(1);
-    expect(b.view('x', PRAYER, tunis('12:26:00')).groups).toEqual({});
-    await start();
-  });
-
-  it('moving from "here" to a later group makes it a plain spot again', async () => {
-    const me = newToken();
-    await here(me, 'boy', GROUP_A);
-    const r = await join(me, 'boy', GROUP_B);
-    expect(r.body.mine).toEqual({ groupId: GROUP_B, state: 'joined' });
-    expect(r.body.groups[GROUP_A]).toBeUndefined();
+  it('can start a new group a few minutes from now', async () => {
+    const r = await coming(newToken(), 'boy', '2026-11-17:dhuhr:12:08', 2);
+    expect(r.status).toBe(200);
+    expect(r.body.groups['2026-11-17:dhuhr:12:08']).toEqual({ boys: 1, girls: false, wait: 2 });
   });
 
   it('rejects bad states and arrival estimates', async () => {
     for (const body of [
-      { state: 'praying' }, { state: 1 },
-      { state: 'going' }, { state: 'going', eta: 3 }, { state: 'going', eta: '5' }, { state: 'going', eta: -2 },
+      { state: 'here' }, { state: 'praying' }, { state: 1 },
+      { state: 'going' }, { state: 'going', eta: 3 }, { state: 'going', eta: 10 }, { state: 'going', eta: '5' }, { state: 'going', eta: -2 },
     ]) {
       const r = await api(newToken(), '/api/join', { section: 'boy', groupId: GROUP_A, ...body });
       expect(r.status, JSON.stringify(body)).toBe(400);
     }
-  });
-
-  it('cannot be "going" or "here" for a group that has not started', async () => {
-    expect((await go(newToken(), 'boy', GROUP_B, 5)).status).toBe(400);
-    expect((await here(newToken(), 'boy', GROUP_B)).status).toBe(400);
-    expect((await join(newToken(), 'boy', GROUP_B)).status).toBe(200);
   });
 });
 

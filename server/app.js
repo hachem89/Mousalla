@@ -77,8 +77,6 @@ export function createApp({ now = () => Date.now(), staticDir, config = serverCo
     if (state === 'going' && !appConfig.arrivalOptions.includes(eta)) return fail(res, 400, 'bad_eta');
     const group = parseGroup(groupId, t);
     if (!group) return fail(res, 400, 'bad_group');
-    // "On my way" and "I'm here" only make sense once the group's time has come.
-    if (state !== 'joined' && group.start > t) return fail(res, 400, 'not_started');
     if (!board.join(req.tokenHash, section, group, t, state, eta)) return fail(res, 503, 'board_full');
     res.json(board.view(req.tokenHash, group.prayer, t));
   });
