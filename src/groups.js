@@ -60,7 +60,7 @@ export function listGroups(prayer, data, now, cfg = config) {
   const prefix = `${prayerKey(prayer)}:`;
   const mainId = groupId(prayer, prayer.time);
   const { start, end } = prayerWindow(prayer, cfg);
-  const groups = { [mainId]: { boys: 0, girls: false, coming: false }, ...data?.groups };
+  const groups = { [mainId]: { boys: 0, boysComing: 0, girls: false, coming: false }, ...data?.groups };
   return Object.entries(groups)
     .filter(([id]) => id.startsWith(prefix))
     .map(([id, counts]) => ({ ...counts, id, start: groupStart(id) }))

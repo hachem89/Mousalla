@@ -57,6 +57,15 @@ export default {
   // Sections
   groupsTitle: (name) => `${name} groups`,
   comingButton: "I'm coming, wait for me",
+  friendsLabel: 'Friends with me:',
+  friendsLess: 'One friend less',
+  friendsMore: 'One friend more',
+
+  // Room drawing
+  roomTitle: (time) => `In the room · ${time} group`,
+  roomLabel: (boys, coming, girls) => `Prayer room: ${boys} ${boys === 1 ? 'boy' : 'boys'}${coming ? `, ${coming} on the way` : ''}. Girls: ${girls ? 'Yes' : 'No'}.`,
+  legendHere: 'In the group',
+  legendComing: 'On the way',
   ownTitle: 'Other time',
   ownLabel: 'Time I will pray',
   ownCreate: 'Create group',

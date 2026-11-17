@@ -51,7 +51,7 @@ describe('groups', () => {
 
   it('always has the main group at the adhan, even when empty', () => {
     const g = listGroups(dhuhr, null, at('11:50:00'));
-    expect(g).toEqual([{ id: MAIN, start: tunis('12:04:00'), started: false, boys: 0, girls: false, coming: false }]);
+    expect(g).toEqual([{ id: MAIN, start: tunis('12:04:00'), started: false, boys: 0, boysComing: 0, girls: false, coming: false }]);
   });
 
   it('lists the groups of this prayer by time', () => {
