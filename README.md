@@ -31,7 +31,8 @@ Contents: [How it works](#how-it-works) · [Privacy](#privacy) ·
 - **Friends with me: − N +.** Coming with classmates? Set how many (0 to 10)
   before joining, or change it later. Boys' friends are added to **Boys: N**;
   girls' friends change nothing, since girls are only ever Yes/No.
-- **The room.** For the group praying now (yours first), a small pixel drawing
+- **The room.** For the group praying now (yours first), or the next group
+  when nobody is praying yet, a small pixel drawing
   of the prayer room: the mihrab, the imam's place, then rows of 5, 7, 7 and 7
   places. Boys fill it in order (each row from the middle out): solid for boys
   in the group, dashed for boys on the way. Girls are never drawn one by one,
