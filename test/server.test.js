@@ -164,8 +164,7 @@ describe('invalid input', () => {
       undefined, 42, '', 'hello', '2026-11-17:dhuhr', '2026-11-17:lunch:12:04',
       '2026-11-17:dhuhr:24:00', '2026-11-17:dhuhr:12:60', '2026-02-30:dhuhr:12:04',
       '2026-11-17:dhuhr:12:04:extra', ' 2026-11-17:dhuhr:12:04',
-      '2026-11-17:dhuhr:14:05', // more than 2 hours ahead
-      '2026-11-17:fajr:09:30', // more than 2 hours ago
+      '2026-11-18:asr:00:30', // more than 12 hours ahead
       '2026-11-17:fajr:11:30', // already over
       '2026-11-18:dhuhr:12:04', // tomorrow
     ];
@@ -176,8 +175,9 @@ describe('invalid input', () => {
     expect((await board(newToken())).body.groups).toEqual({});
   });
 
-  it('accepts groups up to 2 hours ahead', async () => {
-    expect((await join(newToken(), 'boy', '2026-11-17:asr:14:00')).status).toBe(200);
+  it('accepts groups many hours ahead (the app keeps them inside the prayer window)', async () => {
+    expect((await join(newToken(), 'boy', '2026-11-17:asr:16:30')).status).toBe(200);
+    expect((await join(newToken(), 'boy', '2026-11-17:isha:23:30')).status).toBe(200);
   });
 
   it('rejects bad prayer keys', async () => {

@@ -7,7 +7,9 @@ const GROUP_RE = new RegExp(`^${PRAYER}:([01]\\d|2[0-3]):([0-5]\\d)$`);
 
 // Tunis is UTC+1 all year (no daylight saving).
 const TUNIS_OFFSET = '+01:00';
-const MAX_DISTANCE = 2 * 3600 * 1000;
+// The app keeps times inside the prayer's window (the longest, Isha to Fajr, is
+// about 11 hours); the server only rejects times further away than this.
+const MAX_DISTANCE = 12 * 3600 * 1000;
 
 const MINUTE = 60000;
 
@@ -26,7 +28,7 @@ export function isPrayerKey(key) {
 }
 
 // "2026-11-17:dhuhr:12:15" -> { id, prayer, start, end }, or null if invalid,
-// further than 2 hours from now, or already over. Any minute is allowed.
+// further than 12 hours from now, or already over. Any minute is allowed.
 export function parseGroup(id, now, groupMinutes = appConfig.groupMinutes) {
   if (typeof id !== 'string') return null;
   const m = GROUP_RE.exec(id);
