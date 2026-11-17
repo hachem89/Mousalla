@@ -78,9 +78,9 @@ These are promises, not goals:
   token only lets you move or cancel your own spot, and stops one phone from
   joining twice.
 - The server keeps, **in memory only** (never on disk): a salted hash of the
-  token, boy/girl, the group (its time), a state (joined or coming) and an
-  expiry time. Every spot disappears when its group
-  ends. A restart wipes everything.
+  token, boy/girl, the group (its time), a state (joined or coming), the
+  number of friends coming along, and an expiry time. Every spot disappears
+  when its group ends. A restart wipes everything.
 - **Girls are never counted.** The server itself only ever sends "girls: yes or
   no" per group; the number of girls never leaves it. Boys' counts are public.
 - The server does not log requests, IP addresses or tokens. IPs and tokens are
