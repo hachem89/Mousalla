@@ -50,7 +50,6 @@ export default {
   hintMineLater: (time) => `You pray at ${time}.`,
   hintMineNow: 'Your group is praying now.',
   hintComing: "They'll wait for you.",
-  hintOpens: (time) => `Opens at ${time}.`,
 
   // Sections
   comingButton: "I'm coming",
@@ -90,7 +89,6 @@ export default {
     empty: 'Choose a time first.',
     outside: (name, from, to) => `Choose a time between ${from} and ${to} (${name} time).`,
     past: 'That time has already passed.',
-    too_early: 'That is more than 2 hours away. Try again closer to the time.',
   },
 
   errors: {

@@ -2,7 +2,7 @@
 import t from './strings.js';
 import { formatTime } from './prayer.js';
 import {
-  prayerWindow, prayerKey, groupId, listGroups, comingGroupId, checkOwnTime, nearbyGroup, JOIN_AHEAD_MS,
+  prayerWindow, prayerKey, groupId, listGroups, comingGroupId, checkOwnTime, nearbyGroup,
 } from './groups.js';
 import config from './config.js';
 import { fetchBoard, joinGroup, leaveGroup } from './api.js';
@@ -197,8 +197,8 @@ function render(prayer, now) {
   const myGroup = groups.find((g) => g.id === mine?.groupId);
   const praying = groups.filter((g) => g.started);
   const { start, end } = prayerWindow(prayer);
-  const opensAt = start - JOIN_AHEAD_MS;
-  const canJoin = now >= opensAt && now < end;
+  // Groups can be joined any time until the end of the prayer's window.
+  const canJoin = now < end;
 
   // The big button only starts a new group (in 2 minutes) when nobody is praying
   // that you could still reach; otherwise "I'm coming" is on the group itself.
@@ -211,7 +211,6 @@ function render(prayer, now) {
   let hint;
   if (state.error) hint = t.errors[state.error] || t.errors.default;
   else if (!state.board) hint = t.loading;
-  else if (!canJoin) hint = t.hintOpens(formatTime(new Date(opensAt)));
   else if (mine?.state === 'going') hint = t.hintComing;
   else if (myGroup) hint = myGroup.started ? t.hintMineNow : t.hintMineLater(formatTime(myGroup.start));
   else if (now < start) hint = t.hintBefore(t.names[prayer.name], formatTime(prayer.time));

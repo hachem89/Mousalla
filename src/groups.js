@@ -2,7 +2,6 @@ import config from './config.js';
 import { localDate, formatTime, computeTimes, addDays } from './prayer.js';
 
 const MINUTE = 60000;
-export const JOIN_AHEAD_MS = 2 * 3600 * 1000; // the server accepts times up to 2 hours ahead
 
 // The prayer the board is about: the current one while people can still come,
 // otherwise the next one.
@@ -87,14 +86,13 @@ export function comingGroupId(prayer, groups, now, mineId = null, cfg = config) 
 }
 
 // A time typed by the user ("12:40") -> { start } or { error }.
-// It must be inside the prayer's window, not in the past, and at most 2 hours ahead.
+// It must be inside the prayer's window and not in the past.
 export function checkOwnTime(value, prayer, now, cfg = config) {
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(value || '')) return { error: 'empty' };
   const start = groupStart(`${prayerKey(prayer)}:${value}`);
   const { start: from, end } = prayerWindow(prayer, cfg);
   if (start < from || start >= end) return { error: 'outside' };
   if (start.getTime() < Math.floor(now / MINUTE) * MINUTE) return { error: 'past' };
-  if (start - now > JOIN_AHEAD_MS) return { error: 'too_early' };
   return { start };
 }
 

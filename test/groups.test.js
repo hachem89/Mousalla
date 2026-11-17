@@ -143,10 +143,13 @@ describe('own time', () => {
     expect(checkOwnTime('05:25', isha, at('23:00:00')).error).toBe('outside'); // Fajr is 05:30
   });
 
-  it('refuses past times, empty input and times too far ahead', () => {
+  it('refuses past times and empty input', () => {
     expect(check('12:20', '12:30:00').error).toBe('past');
     expect(check('', '12:30:00').error).toBe('empty');
     expect(check('25:00', '12:30:00').error).toBe('empty');
-    expect(check('13:15', '11:00:00').error).toBe('too_early');
+  });
+
+  it('accepts any time in the window, however far ahead (no 2-hour limit)', () => {
+    expect(formatTime(check('14:40', '07:00:00').start)).toBe('14:40');
   });
 });
