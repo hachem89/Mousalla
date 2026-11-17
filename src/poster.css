@@ -3,7 +3,7 @@
   --green: #1f4d3a;
   --gold: #c9a227;
   --ink: #1b1b1b;
-  --pixel: 'Pixelify Sans', monospace;
+  --pixel: 'Jersey 10', monospace;
   --body: 'Atkinson Hyperlegible', system-ui, sans-serif;
 }
 
@@ -61,7 +61,7 @@ h1, p { margin: 0; }
 header img { image-rendering: pixelated; }
 
 h1 {
-  font: 600 64px/1 var(--pixel);
+  font: 400 84px/1 var(--pixel);
   color: var(--green);
 }
 
@@ -101,7 +101,7 @@ h1 {
   margin: 0 auto 2mm;
   width: 12mm;
   height: 12mm;
-  font: 600 28px/12mm var(--pixel);
+  font: 400 34px/12mm var(--pixel);
   color: var(--cream);
   background: var(--green);
   border-radius: 2mm;

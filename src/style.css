@@ -4,7 +4,7 @@
   --green-light: #d9e6d3;
   --gold: #c9a227;
   --ink: #1b1b1b;
-  --pixel: 'Pixelify Sans', monospace;
+  --pixel: 'Jersey 10', monospace;
   --body: 'Atkinson Hyperlegible', system-ui, sans-serif;
   --shadow: 4px 4px 0 var(--ink);
 }
@@ -41,7 +41,7 @@ h1, h2, p { margin: 0; }
 .logo { image-rendering: pixelated; }
 
 h1 {
-  font: 600 28px/1 var(--pixel);
+  font: 400 36px/1 var(--pixel);
   color: var(--green);
   letter-spacing: 1px;
 }
@@ -78,7 +78,7 @@ main {
 
 .hero-name {
   margin-top: 2px;
-  font: 600 40px/1.1 var(--pixel);
+  font: 400 52px/1 var(--pixel);
 }
 
 .hero-time { color: var(--gold); }
@@ -87,7 +87,7 @@ main {
 .hero-sub { margin-top: 4px; font-size: 17px; }
 
 .hero-sub.countdown {
-  font: 600 28px/1.2 var(--pixel);
+  font: 400 38px/1.1 var(--pixel);
   font-variant-numeric: tabular-nums;
 }
 
@@ -150,7 +150,7 @@ main {
   text-align: center;
 }
 
-.ask h2 { font: 600 36px/1.1 var(--pixel); color: var(--green); }
+.ask h2 { font: 400 46px/1.1 var(--pixel); color: var(--green); }
 
 .ask-buttons { display: flex; gap: 12px; }
 .ask-buttons .btn { flex: 1; }
@@ -184,7 +184,7 @@ main {
 
 .g-main { flex: 1; display: flex; flex-direction: column; gap: 4px; }
 .g-info { font-size: 16px; }
-.g-time { font: 600 26px/1 var(--pixel); font-variant-numeric: tabular-nums; }
+.g-time { font: 400 34px/1 var(--pixel); font-variant-numeric: tabular-nums; }
 .g-when { font-weight: 700; color: var(--green); }
 .g-wait { font-weight: 700; color: #6b4e00; }
 .g-wait::before { content: '⏳ ' / ''; }
@@ -261,7 +261,7 @@ main {
 }
 
 .banner-title {
-  font: 600 30px/1.1 var(--pixel);
+  font: 400 38px/1 var(--pixel);
   text-transform: uppercase;
 }
 

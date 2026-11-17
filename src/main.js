@@ -1,4 +1,4 @@
-import '@fontsource/pixelify-sans/latin-600.css';
+import '@fontsource/jersey-10/latin-400.css';
 import '@fontsource/atkinson-hyperlegible/latin-400.css';
 import '@fontsource/atkinson-hyperlegible/latin-700.css';
 import './style.css';

@@ -1,6 +1,6 @@
 // Printable A4 poster with a QR code to the app.
 // The QR code points to this site's address, or to ?url=... if given.
-import '@fontsource/pixelify-sans/latin-600.css';
+import '@fontsource/jersey-10/latin-400.css';
 import '@fontsource/atkinson-hyperlegible/latin-400.css';
 import '@fontsource/atkinson-hyperlegible/latin-700.css';
 import './poster.css';
