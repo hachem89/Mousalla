@@ -3,12 +3,13 @@ export default {
   appName: 'Mousalla',
   place: 'INSAT prayer room',
 
-  // Next prayer
-  nextPrayer: 'Next prayer',
+  // Prayer card
+  nowLabel: 'Now',
+  nextLabel: 'Next prayer',
   tomorrow: 'tomorrow',
   in: 'in',
-  now: 'Now',
-  noCurrent: 'Night',
+  startedAgo: (min) => (min < 60 ? `Started ${min} min ago` : `Started ${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min ago`),
+  nextLine: (name, time, left) => `Next: ${name} ${time} · in ${left}`,
   footer: 'Times for INSAT, Tunis',
   countdownLabel: (name, time) => `${name} in ${time}`,
   names: {
@@ -34,56 +35,60 @@ export default {
 
   // Board
   boardTitle: (name) => `${name}: who's praying?`,
+  loading: 'Loading the board…',
   boys: (n) => `Boys: ${n}`,
-  boysHere: (n, here) => (here > 0 ? `Boys: ${n} (${here} already here)` : `Boys: ${n}`),
   girls: (yes) => `Girls: ${yes ? 'Yes' : 'No'}`,
-  startsIn: (min) => (min <= 1 ? 'Starts in 1 min' : `Starts in ${min} min`),
+  mainGroup: 'Main group',
   prayingNow: 'Praying now',
-  wait: (min) => (min > 0 ? `Someone is on the way. Wait about ${min} min.` : 'Someone is arriving now. Wait for them.'),
+  openNow: 'Open now, nobody yet',
+  startsIn: (min) => `Starts in ${min} min`,
+  wait: (min) => (min > 0 ? `Someone is coming. Wait about ${min} min.` : 'Someone is arriving now. Wait for them.'),
+  groupLabel: (time) => `${time} group`,
 
   // Hints above the board
-  loading: 'Loading the board…',
-  hintEmpty: "Nobody has picked a time yet. Choose when you'll pray, and others can join you.",
-  hintChoose: "Join a group below, or choose your own time.",
+  hintBefore: (name, time) => `${name} starts at ${time}. Join the main group, or pick your own time.`,
+  hintPraying: `People are praying now. Tap "I'm coming" so they wait for you.`,
+  hintNobody: `Nobody is praying right now. Tap "I'm coming" to start a group, or pick your own time.`,
   hintMineLater: (time) => `You'll pray at ${time}. Others can see it and join you.`,
-  hintMineNow: "It's time! Tap \"I'm here\" when you arrive.",
-  hintOpens: (time) => `You can choose a time from ${time}.`,
+  hintMineNow: `Your group is praying now. Tap "I'm coming" so they wait for you.`,
+  hintComing: "Others can see you're coming. They'll wait for you.",
+  hintOpens: (time) => `You can join from ${time}.`,
 
-  // My group
-  myGroupTitle: (time) => `You pray at ${time}`,
+  // Sections
+  prayingTitle: 'Praying now',
+  comingTitle: "I'm coming, wait for me:",
+  minutes: (m) => `${m} min`,
+  comingLabel: (m) => `I'm coming in ${m} minutes, wait for me`,
+  laterTitle: 'Later groups',
+  ownTitle: "Can't make it? Pick your own time",
+  ownLabel: 'My time',
+  ownCreate: 'Create group',
+
+  // Group buttons and my state
+  join: 'Join',
+  joinInstead: 'Join instead',
   myState: {
     joined: "You're in this group ✓",
-    going: "You're on your way ✓",
-    here: "You're here ✓",
+    going: "You're coming ✓",
   },
-  imHere: "I'm here",
-  onMyWay: 'On my way, arriving in:',
-  minutes: (m) => `${m} min`,
-  onMyWayLabel: (m) => `On my way, arriving in ${m} minutes`,
   leave: "I can't come",
   leaveLabel: (time) => `Leave the ${time} group`,
 
-  // Other groups
-  groupsTitle: 'Groups',
-  otherGroupsTitle: 'Other groups',
-  groupLabel: (time) => `${time} group`,
-  joinGroup: 'Pray with them',
-  switchGroup: 'Switch to this group',
-
-  // Choosing a time
-  pickTitle: "When will you pray?",
-  pickOther: 'Choose a different time',
-  pickNow: 'Now',
-  pickLabel: (time) => `Pray at ${time}`,
+  // Own time
   suggest: (time) => `A group already prays at ${time}. Pray with them?`,
   suggestYes: (time) => `Yes, join ${time}`,
-  suggestNo: (time) => `No, keep ${time}`,
+  suggestNo: (time) => `No, create ${time}`,
+  ownErrors: {
+    empty: 'Choose a time first.',
+    outside: (name, from, to) => `Choose a time between ${from} and ${to} (${name} time).`,
+    past: 'That time has already passed.',
+    too_early: 'That is more than 2 hours away. Try again closer to the time.',
+  },
 
   errors: {
     offline: "Offline: can't reach the board. Prayer times still work. Retrying…",
     too_many_requests: 'Too many taps. Wait a minute.',
     board_full: 'The board is full right now. Try again soon.',
-    not_started: 'This group has not started yet.',
     default: 'Something went wrong. Try again.',
   },
 
@@ -99,7 +104,7 @@ export default {
     steps: [
       'Scan the code',
       'Choose Boy or Girl',
-      'Join a group, or choose the time you will pray',
+      "Tap \"I'm coming\", join a group, or pick your time",
     ],
     privacy: 'No account, no name, no location. Girls are never counted: only "Yes" or "No" is shown.',
   },

@@ -5,10 +5,13 @@ import './style.css';
 import t from './strings.js';
 import config from './config.js';
 import { getStatus, formatTime, formatCountdown } from './prayer.js';
-import { boardPrayer, prayerKey, listGroups, timeChoices, nearbyGroup, JOIN_AHEAD_MS } from './groups.js';
+import {
+  boardPrayer, prayerWindow, prayerKey, groupId, listGroups, comingGroupId, checkOwnTime, nearbyGroup, JOIN_AHEAD_MS,
+} from './groups.js';
 import { getSection, setSection } from './device.js';
 import { fetchBoard, joinGroup, leaveGroup } from './api.js';
 
+const MINUTE = 60000;
 const app = document.getElementById('app');
 
 app.innerHTML = `
@@ -37,17 +40,28 @@ app.innerHTML = `
       <p>${t.imamText}</p>
     </div>
 
-    <section class="card next" aria-labelledby="next-title">
-      <p class="label" id="next-title">${t.nextPrayer}</p>
-      <p class="next-name"><span id="next-name"></span> <span class="next-time" id="next-time"></span> <span class="next-day" id="next-day"></span></p>
-      <p class="countdown" id="countdown" role="timer"></p>
-      <p class="current" id="current"></p>
+    <section class="card hero" aria-labelledby="hero-label">
+      <p class="label" id="hero-label"></p>
+      <p class="hero-name"><span id="hero-name"></span> <span class="hero-time" id="hero-time"></span> <span class="hero-day" id="hero-day"></span></p>
+      <p class="hero-sub" id="hero-sub"></p>
     </section>
+    <p class="next-line" id="next-line"></p>
 
     <section class="card" aria-labelledby="board-title">
       <h2 class="label" id="board-title"></h2>
       <p class="hint" id="hint" role="status" aria-live="polite"></p>
       <div id="board"></div>
+
+      <div id="own" hidden>
+        <h3 class="label sub-title">${t.ownTitle}</h3>
+        <div class="suggest" id="suggest" role="alert" hidden></div>
+        <form class="own-form" id="own-form" novalidate>
+          <label for="own-time">${t.ownLabel}</label>
+          <input type="time" id="own-time" step="60" required aria-describedby="own-error" />
+          <button class="btn" type="submit">${t.ownCreate}</button>
+        </form>
+        <p class="own-error" id="own-error" role="alert"></p>
+      </div>
     </section>
   </main>
 
@@ -76,14 +90,14 @@ const dateFmt = new Intl.DateTimeFormat('en-GB', {
 const state = {
   section: getSection(),
   key: null, // prayer the board is about, e.g. "2026-11-17:dhuhr"
-  board: null, // { groups: { [groupId]: { boys, here, girls, wait } }, mine: { groupId, state } | null }
+  prayer: null, // { name, time }
+  board: null, // { groups: { [groupId]: { boys, girls, wait } }, mine: { groupId, state } | null }
   error: null,
-  suggest: null, // { pick, group }: "a group already prays at ..., join it?"
-  picking: false, // time picker opened while already in a group
+  suggest: null, // { start, group }: "a group already prays at ..., join it?"
 };
 
-let lastPrayerKey = '';
 let lastBoardHtml = '';
+let lastSuggest = null;
 
 // ---------- Section (boy / girl) ----------
 
@@ -108,7 +122,7 @@ async function chooseSection(section) {
   showSection();
   // Keep my group, but under the new section.
   const mine = state.board?.mine;
-  if (changed && mine) apply(await joinGroup(section, mine.groupId, mine.state === 'going' ? 'joined' : mine.state));
+  if (changed && mine) apply(await joinGroup(section, mine.groupId));
   tick();
   refresh();
 }
@@ -165,124 +179,135 @@ async function refresh() {
   if (key === state.key) apply(result);
 }
 
-async function join(groupId, joinState, eta) {
+async function join(id, joinState, eta) {
   state.suggest = null;
-  state.picking = false;
-  apply(await joinGroup(state.section, groupId, joinState, eta));
+  $('own-error').textContent = '';
+  apply(await joinGroup(state.section, id, joinState, eta));
 }
 
-$('board').addEventListener('click', async (e) => {
+async function onAction(e) {
   const b = e.target.closest('button[data-act]');
   if (!b) return;
   const { act, group, eta } = b.dataset;
-  const now = Date.now();
-  const groups = listGroups(currentPrayer, state.board, now);
-
   if (act === 'join') await join(group);
-  else if (act === 'here') await join(group, 'here');
-  else if (act === 'going') await join(group, 'going', Number(eta));
-  else if (act === 'leave') { state.suggest = null; apply(await leaveGroup(state.key)); }
-  else if (act === 'open-picker') { state.picking = true; tick(); }
-  else if (act === 'no-suggest') await join(state.suggest.pick.id);
-  else if (act === 'pick') {
-    const pick = timeChoices(currentPrayer, now).find((c) => c.id === group);
-    if (!pick) return;
-    // Picking a time close to an existing group: suggest praying with them instead.
-    const near = nearbyGroup(pick.start, groups.filter((g) => g.id !== state.board?.mine?.groupId));
-    if (near && near.id !== pick.id) {
-      state.suggest = { pick, group: near };
-      tick();
-    } else {
-      await join(pick.id);
-    }
+  else if (act === 'coming') await join(group, 'going', Number(eta));
+  else if (act === 'leave') apply(await leaveGroup(state.key));
+  else if (act === 'create') await join(groupId(state.prayer, state.suggest.start));
+}
+$('board').addEventListener('click', onAction);
+$('own').addEventListener('click', onAction);
+
+// "Pick your own time": check it is inside the prayer's time, then create the group,
+// or suggest a group that already prays a few minutes from it.
+$('own-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const now = Date.now();
+  const prayer = state.prayer;
+  const result = checkOwnTime($('own-time').value, prayer, now);
+  if (result.error) {
+    const { start, end } = prayerWindow(prayer);
+    const err = t.ownErrors[result.error];
+    $('own-error').textContent = result.error === 'outside'
+      ? err(t.names[prayer.name], formatTime(new Date(start)), formatTime(new Date(end - MINUTE)))
+      : err;
+    state.suggest = null;
+    tick();
+    return;
+  }
+  $('own-error').textContent = '';
+  const groups = listGroups(prayer, state.board, now).filter((g) => g.id !== state.board?.mine?.groupId);
+  const near = nearbyGroup(result.start, groups);
+  if (near && near.id !== groupId(prayer, result.start)) {
+    state.suggest = { start: result.start, group: near };
+    tick();
+  } else {
+    await join(groupId(prayer, result.start));
   }
 });
 
-const minutesUntil = (date, now) => Math.ceil((date - now) / 60000);
+const minutesUntil = (date, now) => Math.ceil((date - now) / MINUTE);
 
-function countsHtml(g) {
-  return `<p class="g-counts">${t.boysHere(g.boys, g.here)} · ${t.girls(g.girls)}</p>`
-    + (g.wait === null ? '' : `<p class="g-wait">${t.wait(g.wait)}</p>`);
-}
-
-function whenText(g, now) {
-  return g.started ? t.prayingNow : t.startsIn(minutesUntil(g.start, now));
-}
-
-function myGroupHtml(g, mine, now) {
+function groupHtml(g, mine, now) {
   const time = formatTime(g.start);
-  const canAct = g.started && mine.state !== 'here';
-  return `<section class="group is-mine" aria-label="${t.myGroupTitle(time)}">
-    <p class="g-head"><span class="g-time">${time}</span> <span class="g-when">${whenText(g, now)}</span></p>
-    <p class="g-me">${t.myState[mine.state]}</p>
-    ${countsHtml(g)}
-    ${canAct ? `
-      <button class="btn btn-primary btn-big" type="button" data-act="here" data-group="${g.id}">${t.imHere}</button>
-      <div class="going" role="group" aria-labelledby="going-label">
-        <span id="going-label">${t.onMyWay}</span>
-        ${config.arrivalOptions.map((m) => `<button class="btn btn-small" type="button" data-act="going" data-group="${g.id}" data-eta="${m}" aria-label="${t.onMyWayLabel(m)}">${t.minutes(m)}</button>`).join('')}
-      </div>` : ''}
-    <button class="btn btn-small btn-quiet" type="button" data-act="leave" aria-label="${t.leaveLabel(time)}">${t.leave}</button>
-  </section>`;
-}
-
-function otherGroupHtml(g, hasMine, now) {
-  const time = formatTime(g.start);
-  return `<li class="group">
-    <p class="g-head"><span class="g-time">${time}</span> <span class="g-when">${whenText(g, now)}</span></p>
-    ${countsHtml(g)}
-    <button class="btn btn-small" type="button" data-act="join" data-group="${g.id}" aria-label="${t.groupLabel(time)}: ${hasMine ? t.switchGroup : t.joinGroup}">${hasMine ? t.switchGroup : t.joinGroup}</button>
+  const isMine = mine?.groupId === g.id;
+  const empty = g.boys === 0 && !g.girls;
+  const when = g.started ? (empty ? t.openNow : t.prayingNow) : t.startsIn(minutesUntil(g.start, now));
+  const button = isMine
+    ? `<button class="btn btn-small btn-quiet" type="button" data-act="leave" aria-label="${t.leaveLabel(time)}">${t.leave}</button>`
+    : `<button class="btn btn-small" type="button" data-act="join" data-group="${g.id}" aria-label="${t.groupLabel(time)}: ${mine ? t.joinInstead : t.join}">${mine ? t.joinInstead : t.join}</button>`;
+  return `<li class="group${isMine ? ' is-mine' : ''}">
+    <div class="g-main">
+      <p class="g-head"><span class="g-time">${time}</span>${g.isMain ? ` <span class="tag">${t.mainGroup}</span>` : ''}</p>
+      <p class="g-info"><span class="g-when">${when}</span> · ${t.boys(g.boys)} · ${t.girls(g.girls)}</p>
+      ${isMine ? `<p class="g-me">${t.myState[mine.state]}</p>` : ''}
+      ${g.wait === null ? '' : `<p class="g-wait">${t.wait(g.wait)}</p>`}
+    </div>
+    ${button}
   </li>`;
-}
-
-function pickerHtml(choices) {
-  const s = state.suggest;
-  const suggestion = s ? `
-    <div class="suggest" role="alert">
-      <p>${t.suggest(formatTime(s.group.start))}</p>
-      <div class="suggest-buttons">
-        <button class="btn btn-primary" type="button" data-act="join" data-group="${s.group.id}">${t.suggestYes(formatTime(s.group.start))}</button>
-        <button class="btn" type="button" data-act="no-suggest">${t.suggestNo(formatTime(s.pick.start))}</button>
-      </div>
-    </div>` : '';
-  return `<h3 class="label sub-title">${t.pickTitle}</h3>${suggestion}
-    <div class="times-grid">
-      ${choices.map((c) => {
-        const label = c.isNow ? t.pickNow : formatTime(c.start);
-        const picked = s?.pick.id === c.id;
-        return `<button class="btn btn-time" type="button" data-act="pick" data-group="${c.id}" aria-pressed="${picked}" aria-label="${t.pickLabel(c.isNow ? `${t.pickNow} (${formatTime(c.start)})` : label)}">${label}</button>`;
-      }).join('')}
-    </div>`;
 }
 
 function renderBoard(prayer, now) {
   const groups = listGroups(prayer, state.board, now);
-  const mineId = state.board?.mine?.groupId;
-  const myGroup = groups.find((g) => g.id === mineId);
-  const others = groups.filter((g) => g !== myGroup);
-  // Times that already have a group are joined from the group list instead.
-  const choices = timeChoices(prayer, now).filter((c) => !groups.some((g) => g.id === c.id));
+  const mine = state.board?.mine ?? null;
+  const myGroup = groups.find((g) => g.id === mine?.groupId);
+  const praying = groups.filter((g) => g.started);
+  const later = groups.filter((g) => !g.started);
+  const { start, end } = prayerWindow(prayer);
+  const opensAt = start - JOIN_AHEAD_MS;
+  const canJoin = now >= opensAt && now < end;
+
+  // "I'm coming": to my group if it has started, otherwise to the group praying now
+  // (or a new group in N minutes when nobody is).
+  const coming = config.arrivalOptions
+    .map((m) => ({ m, id: myGroup?.started ? myGroup.id : comingGroupId(prayer, groups, m, now) }))
+    .filter((o) => o.id);
 
   // Imam banner: only on the boys' view, when a girl is in a group that is praying now.
-  $('imam').hidden = !(state.section === 'boy' && groups.some((g) => g.started && g.girls));
+  $('imam').hidden = !(state.section === 'boy' && praying.some((g) => g.girls));
 
   let hint;
   if (state.error) hint = t.errors[state.error] || t.errors.default;
   else if (!state.board) hint = t.loading;
+  else if (!canJoin) hint = t.hintOpens(formatTime(new Date(opensAt)));
+  else if (mine?.state === 'going') hint = t.hintComing;
   else if (myGroup) hint = myGroup.started ? t.hintMineNow : t.hintMineLater(formatTime(myGroup.start));
-  else if (!choices.length && !groups.length) hint = t.hintOpens(formatTime(new Date(prayer.time - JOIN_AHEAD_MS)));
-  else hint = groups.length ? t.hintChoose : t.hintEmpty;
+  else if (now < start) hint = t.hintBefore(t.names[prayer.name], formatTime(prayer.time));
+  else if (praying.some((g) => g.boys > 0 || g.girls)) hint = t.hintPraying;
+  else hint = t.hintNobody;
 
   let html = '';
-  if (myGroup) html += myGroupHtml(myGroup, state.board.mine, now);
-  if (others.length) {
-    html += `<h3 class="label sub-title">${myGroup ? t.otherGroupsTitle : t.groupsTitle}</h3>
-      <ul class="groups">${others.map((g) => otherGroupHtml(g, Boolean(myGroup), now)).join('')}</ul>`;
+  if (canJoin && state.board) {
+    if (praying.length) {
+      html += `<h3 class="label sub-title">${t.prayingTitle}</h3>
+        <ul class="groups">${praying.map((g) => groupHtml(g, mine, now)).join('')}</ul>`;
+    }
+    if (coming.length) {
+      html += `<div class="coming" role="group" aria-labelledby="coming-title">
+        <h3 class="label sub-title" id="coming-title">${t.comingTitle}</h3>
+        <div class="coming-buttons">
+          ${coming.map(({ m, id }) => `<button class="btn btn-primary btn-big" type="button" data-act="coming" data-group="${id}" data-eta="${m}" aria-label="${t.comingLabel(m)}">${t.minutes(m)}</button>`).join('')}
+        </div>
+      </div>`;
+    }
+    if (later.length) {
+      html += `<h3 class="label sub-title">${t.laterTitle}</h3>
+        <ul class="groups">${later.map((g) => groupHtml(g, mine, now)).join('')}</ul>`;
+    }
   }
-  if (choices.length && state.board) {
-    html += myGroup && !state.picking
-      ? `<button class="btn btn-small btn-quiet" type="button" data-act="open-picker">${t.pickOther}</button>`
-      : pickerHtml(choices);
+
+  // The "pick your own time" form is not redrawn, so typing in it is never interrupted.
+  $('own').hidden = !(canJoin && state.board);
+
+  const s = state.suggest;
+  if (s !== lastSuggest) {
+    lastSuggest = s;
+    $('suggest').hidden = !s;
+    $('suggest').innerHTML = s ? `
+      <p>${t.suggest(formatTime(s.group.start))}</p>
+      <div class="suggest-buttons">
+        <button class="btn btn-primary" type="button" data-act="join" data-group="${s.group.id}">${t.suggestYes(formatTime(s.group.start))}</button>
+        <button class="btn" type="button" data-act="create">${t.suggestNo(formatTime(s.start))}</button>
+      </div>` : '';
   }
 
   const all = `${prayer.name}|${hint}|${html}`;
@@ -300,43 +325,77 @@ function renderBoard(prayer, now) {
   if (focusKey) $('board').querySelector(focusKey)?.focus();
 }
 
+// A sensible time to suggest in the "my time" field: about 15 minutes from now,
+// on a 5-minute mark, inside the prayer's time.
+function defaultOwnTime(prayer, now) {
+  const { start, end } = prayerWindow(prayer);
+  const step = 5 * MINUTE;
+  let at = Math.max(start, Math.ceil((now + 15 * MINUTE) / step) * step);
+  if (at >= end) at = Math.max(start, Math.floor(now / MINUTE) * MINUTE);
+  return formatTime(new Date(Math.min(at, end - MINUTE)));
+}
+
 // ---------- Clock ----------
 
-let currentPrayer = null;
+let lastHeroKey = '';
+
+function renderHero(s, now) {
+  // The current prayer is shown big. Fajr's time ends at sunrise; after that,
+  // and before Fajr, the next prayer is shown big with a countdown.
+  const current = s.current === 'fajr' && now >= s.times.sunrise ? null : s.current;
+  const left = formatCountdown(s.next.time - now);
+  const nextName = t.names[s.next.name];
+
+  if (current) {
+    const since = Math.floor((now - s.times[current]) / MINUTE);
+    $('hero-sub').textContent = t.startedAgo(since);
+    $('hero-sub').classList.remove('countdown');
+    $('hero-sub').removeAttribute('role');
+    $('next-line').hidden = false;
+    $('next-line').textContent = t.nextLine(nextName, formatTime(s.next.time), left)
+      + (s.next.tomorrow ? ` (${t.tomorrow})` : '');
+  } else {
+    $('hero-sub').textContent = `${t.in} ${left}`;
+    $('hero-sub').classList.add('countdown');
+    $('hero-sub').setAttribute('role', 'timer');
+    $('hero-sub').setAttribute('aria-label', t.countdownLabel(nextName, left));
+    $('next-line').hidden = true;
+  }
+
+  const key = `${s.date}|${current}|${s.next.name}`;
+  if (key === lastHeroKey) return;
+  lastHeroKey = key;
+  const name = current ?? s.next.name;
+  $('hero-label').textContent = current ? t.nowLabel : t.nextLabel;
+  $('hero-name').textContent = t.names[name];
+  $('hero-time').textContent = formatTime(current ? s.times[current] : s.next.time);
+  $('hero-day').textContent = !current && s.next.tomorrow ? t.tomorrow : '';
+  $('date').textContent = dateFmt.format(now);
+}
 
 function tick() {
   if (!state.section) return;
   const now = new Date();
   const s = getStatus(now);
-  const left = formatCountdown(s.next.time - now);
-  const nextName = t.names[s.next.name];
+  renderHero(s, now);
 
-  $('countdown').textContent = `${t.in} ${left}`;
-  $('countdown').setAttribute('aria-label', t.countdownLabel(nextName, left));
-
-  currentPrayer = boardPrayer(s, now.getTime());
-  const key = prayerKey(currentPrayer);
+  const prayer = boardPrayer(s, now.getTime());
+  const key = prayerKey(prayer);
+  state.prayer = prayer;
   if (key !== state.key) {
     // A new prayer: the board starts fresh.
     state.key = key;
     state.board = null;
     state.error = null;
     state.suggest = null;
-    state.picking = false;
+    $('own-error').textContent = '';
+    const { start, end } = prayerWindow(prayer);
+    $('own-time').min = formatTime(new Date(start));
+    $('own-time').max = formatTime(new Date(end - MINUTE));
+    $('own-time').value = defaultOwnTime(prayer, now.getTime());
     refresh();
   }
-  renderBoard(currentPrayer, now.getTime());
-
-  // The rest only changes when the prayer changes.
-  const prayerState = `${s.date}|${s.current}|${s.next.name}`;
-  if (prayerState === lastPrayerKey) return;
-  lastPrayerKey = prayerState;
-
-  $('next-name').textContent = nextName;
-  $('next-time').textContent = formatTime(s.next.time);
-  $('next-day').textContent = s.next.tomorrow ? t.tomorrow : '';
-  $('current').textContent = `${t.now}: ${s.current ? t.names[s.current] : t.noCurrent}`;
-  $('date').textContent = dateFmt.format(now);
+  renderBoard(prayer, now.getTime());
 }
 
 showSection();

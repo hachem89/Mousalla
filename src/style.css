@@ -68,28 +68,46 @@ main {
   letter-spacing: 1px;
 }
 
-.next {
+/* Prayer card: the current prayer, big */
+
+.hero {
   background: var(--green);
   color: var(--cream);
   border-top: 6px solid var(--gold);
 }
 
-.next-name {
+.hero-name {
   margin-top: 2px;
-  font: 600 32px/1.1 var(--pixel);
+  font: 600 40px/1.1 var(--pixel);
 }
 
-.next-time { color: var(--gold); }
-.next-day { font: 700 16px/1 var(--body); }
+.hero-time { color: var(--gold); }
+.hero-day { font: 700 16px/1 var(--body); }
 
-.countdown {
-  font: 600 26px/1.2 var(--pixel);
+.hero-sub { margin-top: 4px; font-size: 17px; }
+
+.hero-sub.countdown {
+  font: 600 28px/1.2 var(--pixel);
   font-variant-numeric: tabular-nums;
 }
 
-.current {
-  margin-top: 4px;
+/* The next prayer, small */
+.next-line {
+  margin-top: -6px;
+  padding: 0 4px;
   font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.tag {
+  display: inline-block;
+  padding: 2px 6px;
+  font: 700 13px/1.2 var(--body);
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--gold);
+  border-radius: 3px;
 }
 
 /* Buttons */
@@ -164,16 +182,17 @@ main {
 
 .group {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
+  align-items: center;
+  gap: 10px;
   padding: 10px 12px;
   background: var(--cream);
   border: 2px solid var(--ink);
   border-radius: 6px;
 }
 
-.g-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.g-main { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.g-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.g-info { font-size: 16px; }
 .g-time { font: 600 26px/1 var(--pixel); font-variant-numeric: tabular-nums; }
 .g-when { font-weight: 700; color: var(--green); }
 .g-wait { font-weight: 700; color: #6b4e00; }
@@ -183,8 +202,6 @@ main {
 /* My group */
 
 .group.is-mine {
-  align-items: stretch;
-  gap: 8px;
   background: var(--green-light);
   border-color: var(--green);
   box-shadow: 3px 3px 0 var(--green);
@@ -192,28 +209,38 @@ main {
 
 .btn-big { min-height: 60px; font-size: 22px; }
 
-.going {
+.btn-quiet { align-self: flex-start; box-shadow: none; background: transparent; }
+
+/* I'm coming */
+
+.coming-buttons { display: flex; gap: 8px; }
+.coming-buttons .btn { flex: 1; padding: 0 6px; }
+
+/* Pick your own time */
+
+.own-form {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  font-weight: 700;
 }
 
-.going .btn { flex: 1; padding: 0 8px; }
-.going span { width: 100%; }
+.own-form label { width: 100%; font-weight: 700; }
 
-.btn-quiet { align-self: flex-start; box-shadow: none; background: transparent; }
-
-/* Choosing a time */
-
-.times-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
-  gap: 8px;
+.own-form input {
+  flex: 1;
+  min-width: 150px;
+  min-height: 48px;
+  padding: 0 10px;
+  font: 700 20px var(--body);
+  color: var(--ink);
+  background: #fff;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
 }
 
-.btn-time { padding: 0 6px; font-variant-numeric: tabular-nums; }
+.own-error { margin-top: 6px; font-weight: 700; color: #8a1c1c; }
+.own-error:empty { display: none; }
 
 .suggest {
   display: flex;
@@ -271,7 +298,7 @@ main {
   outline-offset: 3px;
 }
 
-.next :focus-visible { outline-color: var(--gold); }
+.hero :focus-visible { outline-color: var(--gold); }
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
