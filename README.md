@@ -30,12 +30,15 @@ Contents: [How it works](#how-it-works) · [Privacy](#privacy) ·
 - **Join** any group on the board, or **I can't come** to leave yours.
 - **Other time.** Type the time you can come; it becomes a group that
   others can join. It must be inside the prayer's time (for example Dhuhr
-  12:04–13:18), so nobody can announce Dhuhr during Asr. If the time is within
+  12:04–14:42 when Asr is at 14:48), so nobody can announce Dhuhr during Asr.
+  Isha times after midnight count as the same night. If the time is within
   10 minutes of an existing group, the app asks "A group already prays at
   12:40. Pray with them?" so people end up together.
 - Every group shows **Praying now** or **Starts in N min**, **Boys: N** and
   **Girls: Yes/No**. The board refreshes every 5 seconds.
-- The board shows the current prayer while people can still come (its window),
+- **Prayer windows**: people can pray together from the adhan until 5 minutes
+  before the next prayer. Fajr ends 5 minutes before sunrise, Isha 5 minutes
+  before the next Fajr. The board shows the current prayer during its window,
   then the next prayer. Groups can be joined up to 2 hours ahead.
 - **Imam banner**: on the Boys' view, when a group praying now has at least
   one girl (joined or coming), a big banner says "Girls are praying behind you
@@ -99,7 +102,7 @@ App settings are in [`src/config.js`](src/config.js):
 | `timeZone` | `Africa/Tunis` | Used for "today" and for showing times |
 | `fajrAngle`, `ishaAngle` | `18`, `18` | Sun angles below the horizon |
 | `offsets` | all `0` | Minutes added to each time, to match the official timetable |
-| `windows` | Fajr 45, Dhuhr 75, Asr 60, Maghrib 40, Isha 60 | Minutes after the adhan in which people can pray together; your own time must be inside it |
+| `endBeforeNextMinutes` | `5` | A prayer's window runs from its adhan until this many minutes before the next prayer (Fajr: before sunrise; Isha: before the next Fajr). Your own time must be inside it |
 | `groupMinutes` | `15` | How long a group stays on the board after its time |
 | `suggestJoinMinutes` | `10` | Picking a time this close to a group suggests joining it |
 | `comingMinutes` | `2` | What "I'm coming" means; a new group starts this many minutes from now when nobody is praying |
