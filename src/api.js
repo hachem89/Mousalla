@@ -17,5 +17,5 @@ async function request(path, body) {
 }
 
 export const fetchBoard = (prayer) => request(`/api/board?prayer=${encodeURIComponent(prayer)}`);
-export const joinGroup = (section, groupId, state = 'joined', eta) => request('/api/join', { section, groupId, state, eta });
+export const joinGroup = (section, groupId, state = 'joined') => request('/api/join', { section, groupId, state });
 export const leaveGroup = (prayer) => request('/api/cancel', { prayer });

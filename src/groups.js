@@ -43,7 +43,7 @@ export function listGroups(prayer, data, now, cfg = config) {
   const prefix = `${prayerKey(prayer)}:`;
   const mainId = groupId(prayer, prayer.time);
   const { start, end } = prayerWindow(prayer, cfg);
-  const groups = { [mainId]: { boys: 0, girls: false, wait: null }, ...data?.groups };
+  const groups = { [mainId]: { boys: 0, girls: false, coming: false }, ...data?.groups };
   return Object.entries(groups)
     .filter(([id]) => id.startsWith(prefix))
     .map(([id, counts]) => ({ ...counts, id, start: groupStart(id) }))
@@ -53,15 +53,15 @@ export function listGroups(prayer, data, now, cfg = config) {
     .sort((a, b) => a.start - b.start);
 }
 
-// Where "I'm coming in N min" goes: the group that started most recently,
-// or, when nobody is praying now, a new group starting in N minutes.
+// Where "I'm coming" goes: the group that started most recently,
+// or, when nobody is praying now, a new group starting in 2 minutes.
 // null when the prayer has not started yet or its window is over.
-export function comingGroupId(prayer, groups, eta, now, cfg = config) {
+export function comingGroupId(prayer, groups, now, cfg = config) {
   const { start, end } = prayerWindow(prayer, cfg);
   if (now < start || now >= end) return null;
   const active = groups.filter((g) => g.started).at(-1);
   if (active) return active.id;
-  const at = Math.floor(now / MINUTE) * MINUTE + eta * MINUTE;
+  const at = Math.floor(now / MINUTE) * MINUTE + cfg.comingMinutes * MINUTE;
   return at < end ? groupId(prayer, new Date(at)) : null;
 }
 

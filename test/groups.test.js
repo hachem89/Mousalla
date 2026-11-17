@@ -31,9 +31,9 @@ describe('board prayer', () => {
 describe('groups', () => {
   const data = {
     groups: {
-      '2026-11-17:dhuhr:12:40': { boys: 1, girls: false, wait: null },
-      '2026-11-17:dhuhr:12:07': { boys: 2, girls: true, wait: 3 },
-      '2026-11-17:asr:14:48': { boys: 5, girls: false, wait: null },
+      '2026-11-17:dhuhr:12:40': { boys: 1, girls: false, coming: false },
+      '2026-11-17:dhuhr:12:07': { boys: 2, girls: true, coming: true },
+      '2026-11-17:asr:14:48': { boys: 5, girls: false, coming: false },
     },
   };
 
@@ -43,21 +43,21 @@ describe('groups', () => {
 
   it('always has the main group at the adhan, even when empty', () => {
     const g = listGroups(dhuhr, null, at('11:50:00'));
-    expect(g).toEqual([{ id: MAIN, start: tunis('12:04:00'), started: false, boys: 0, girls: false, wait: null }]);
+    expect(g).toEqual([{ id: MAIN, start: tunis('12:04:00'), started: false, boys: 0, girls: false, coming: false }]);
   });
 
   it('lists the groups of this prayer by time', () => {
     const g = listGroups(dhuhr, data, at('12:10:00'));
     expect(g.map((x) => x.id)).toEqual([MAIN, '2026-11-17:dhuhr:12:07', '2026-11-17:dhuhr:12:40']);
-    expect(g[1]).toMatchObject({ boys: 2, girls: true, wait: 3, started: true });
+    expect(g[1]).toMatchObject({ boys: 2, girls: true, coming: true, started: true });
     expect(g[2].started).toBe(false);
   });
 
   it('ignores groups outside the prayer time (before the adhan or after the window)', () => {
     const d = { groups: {
-      '2026-11-17:dhuhr:11:50': { boys: 2, girls: true, wait: null },
-      '2026-11-17:dhuhr:13:19': { boys: 1, girls: false, wait: null },
-      '2026-11-17:dhuhr:13:18': { boys: 1, girls: false, wait: null },
+      '2026-11-17:dhuhr:11:50': { boys: 2, girls: true, coming: false },
+      '2026-11-17:dhuhr:13:19': { boys: 1, girls: false, coming: false },
+      '2026-11-17:dhuhr:13:18': { boys: 1, girls: false, coming: false },
     } };
     const g = listGroups(dhuhr, d, at('11:55:00'));
     expect(g.map((x) => x.id)).toEqual([MAIN, '2026-11-17:dhuhr:13:18']);
@@ -80,23 +80,23 @@ describe("I'm coming", () => {
   const groupsAt = (hms, d = null) => listGroups(dhuhr, d, at(hms));
 
   it('joins the group praying now', () => {
-    expect(comingGroupId(dhuhr, groupsAt('12:06:00'), 2, at('12:06:00'))).toBe(MAIN);
+    expect(comingGroupId(dhuhr, groupsAt('12:06:00'), at('12:06:00'))).toBe(MAIN);
   });
 
   it('joins the group that started most recently', () => {
-    const d = { groups: { '2026-11-17:dhuhr:12:10': { boys: 1, girls: false, wait: null } } };
-    expect(comingGroupId(dhuhr, groupsAt('12:12:00', d), 2, at('12:12:00'))).toBe('2026-11-17:dhuhr:12:10');
+    const d = { groups: { '2026-11-17:dhuhr:12:10': { boys: 1, girls: false, coming: false } } };
+    expect(comingGroupId(dhuhr, groupsAt('12:12:00', d), at('12:12:00'))).toBe('2026-11-17:dhuhr:12:10');
   });
 
-  it('starts a new group in N minutes when nobody is praying now', () => {
-    expect(comingGroupId(dhuhr, groupsAt('12:40:30'), 5, at('12:40:30'))).toBe('2026-11-17:dhuhr:12:45');
+  it('starts a new group in 2 minutes when nobody is praying now', () => {
+    expect(comingGroupId(dhuhr, groupsAt('12:40:30'), at('12:40:30'))).toBe('2026-11-17:dhuhr:12:42');
   });
 
   it('is not possible before the adhan or after the window', () => {
-    expect(comingGroupId(dhuhr, groupsAt('12:00:00'), 1, at('12:00:00'))).toBe(null);
-    expect(comingGroupId(dhuhr, groupsAt('13:19:00'), 1, at('13:19:00'))).toBe(null);
-    expect(comingGroupId(dhuhr, groupsAt('13:16:00'), 5, at('13:16:00'))).toBe(null);
-    expect(comingGroupId(dhuhr, groupsAt('13:16:00'), 2, at('13:16:00'))).toBe('2026-11-17:dhuhr:13:18');
+    expect(comingGroupId(dhuhr, groupsAt('12:00:00'), at('12:00:00'))).toBe(null);
+    expect(comingGroupId(dhuhr, groupsAt('13:19:00'), at('13:19:00'))).toBe(null);
+    expect(comingGroupId(dhuhr, groupsAt('13:17:00'), at('13:17:00'))).toBe(null);
+    expect(comingGroupId(dhuhr, groupsAt('13:16:00'), at('13:16:00'))).toBe('2026-11-17:dhuhr:13:18');
   });
 });
 

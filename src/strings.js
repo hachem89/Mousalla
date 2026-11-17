@@ -42,7 +42,7 @@ export default {
   now: 'Now',
   nobodyYet: 'Nobody yet',
   startsIn: (min) => `Starts in ${min} min`,
-  wait: (min) => (min > 0 ? `Someone is coming. Wait about ${min} min.` : 'Someone is arriving now. Wait for them.'),
+  onTheWay: 'Someone is on the way. Wait for them.',
   groupLabel: (time) => `${time} group`,
 
   // Hints above the board
@@ -56,9 +56,7 @@ export default {
 
   // Sections
   groupsTitle: (name) => `${name} groups`,
-  comingTitle: "I'm coming, wait for me:",
-  minutes: (m) => `${m} min`,
-  comingLabel: (m) => `I'm coming in ${m} minutes, wait for me`,
+  comingButton: "I'm coming, wait for me",
   ownTitle: 'Other time',
   ownLabel: 'Time I will pray',
   ownCreate: 'Create group',

@@ -1,6 +1,5 @@
 // The board: groups of the prayer, "I'm coming", and "Other time".
 import t from './strings.js';
-import config from './config.js';
 import { formatTime } from './prayer.js';
 import {
   prayerWindow, prayerKey, groupId, listGroups, comingGroupId, checkOwnTime, nearbyGroup, JOIN_AHEAD_MS,
@@ -14,7 +13,7 @@ const state = {
   section: null, // "boy" | "girl"
   key: null, // prayer the board is about, e.g. "2026-11-17:dhuhr"
   prayer: null, // { name, time }
-  board: null, // { groups: { [groupId]: { boys, girls, wait } }, mine: { groupId, state } | null }
+  board: null, // { groups: { [groupId]: { boys, girls, coming } }, mine: { groupId, state } | null }
   error: null,
   suggest: null, // { start, group }: "a group already prays at ..., join it?"
 };
@@ -71,18 +70,18 @@ export function updateBoard(prayer, now) {
   render(prayer, now);
 }
 
-async function join(id, joinState, eta) {
+async function join(id, joinState) {
   state.suggest = null;
   $('own-error').textContent = '';
-  apply(await joinGroup(state.section, id, joinState, eta));
+  apply(await joinGroup(state.section, id, joinState));
 }
 
 async function onAction(e) {
   const b = e.target.closest('button[data-act]');
   if (!b) return;
-  const { act, group, eta } = b.dataset;
+  const { act, group } = b.dataset;
   if (act === 'join') await join(group);
-  else if (act === 'coming') await join(group, 'going', Number(eta));
+  else if (act === 'coming') await join(group, 'going');
   else if (act === 'leave') apply(await leaveGroup(state.key));
   else if (act === 'create') await join(groupId(state.prayer, state.suggest.start));
 }
@@ -137,7 +136,7 @@ function groupHtml(g, mine, now) {
       <p class="g-time">${time}</p>
       <p class="g-info"><span class="g-when">${when}</span> · ${who}</p>
       ${isMine ? `<p class="g-me">${t.myState[mine.state]}</p>` : ''}
-      ${g.wait === null ? '' : `<p class="g-wait">${t.wait(g.wait)}</p>`}
+      ${g.coming ? `<p class="g-wait">${t.onTheWay}</p>` : ''}
     </div>
     ${button}
   </li>`;
@@ -153,10 +152,8 @@ function render(prayer, now) {
   const canJoin = now >= opensAt && now < end;
 
   // "I'm coming": to my group if it has started, otherwise to the group praying now
-  // (or a new group in N minutes when nobody is).
-  const coming = config.arrivalOptions
-    .map((m) => ({ m, id: myGroup?.started ? myGroup.id : comingGroupId(prayer, groups, m, now) }))
-    .filter((o) => o.id);
+  // (or a new group in 2 minutes when nobody is).
+  const comingId = myGroup?.started ? myGroup.id : comingGroupId(prayer, groups, now);
 
   // Imam banner: only on the boys' view, when a girl is in a group that is praying now.
   $('imam').hidden = !(state.section === 'boy' && praying.some((g) => g.girls));
@@ -174,15 +171,12 @@ function render(prayer, now) {
   let html = '';
   if (canJoin && state.board) {
     // One list for all groups of this prayer; each row says "Praying now" or "Starts in N min".
-    html += `<h3 class="label sub-title">${t.groupsTitle(t.names[prayer.name])}</h3>
-      <ul class="groups">${groups.map((g) => groupHtml(g, mine, now)).join('')}</ul>`;
-    if (coming.length) {
-      html += `<div class="coming" role="group" aria-labelledby="coming-title">
-        <h3 class="label sub-title" id="coming-title">${t.comingTitle}</h3>
-        <div class="coming-buttons">
-          ${coming.map(({ m, id }) => `<button class="btn btn-primary btn-big" type="button" data-act="coming" data-group="${id}" data-eta="${m}" aria-label="${t.comingLabel(m)}">${t.minutes(m)}</button>`).join('')}
-        </div>
-      </div>`;
+    if (groups.length) {
+      html += `<h3 class="label sub-title">${t.groupsTitle(t.names[prayer.name])}</h3>
+        <ul class="groups">${groups.map((g) => groupHtml(g, mine, now)).join('')}</ul>`;
+    }
+    if (comingId && mine?.state !== 'going') {
+      html += `<button class="btn btn-primary btn-big btn-coming" type="button" data-act="coming" data-group="${comingId}">${t.comingButton}</button>`;
     }
   }
 
@@ -210,7 +204,7 @@ function render(prayer, now) {
 
   // Keep focus on the same button after redrawing.
   const focused = document.activeElement?.closest?.('#board [data-act]');
-  const focusKey = focused && ['act', 'group', 'eta']
+  const focusKey = focused && ['act', 'group']
     .filter((k) => focused.dataset[k]).map((k) => `[data-${k}="${focused.dataset[k]}"]`).join('');
   $('board').innerHTML = html;
   if (focusKey) $('board').querySelector(focusKey)?.focus();

@@ -204,8 +204,7 @@ main {
 
 /* I'm coming */
 
-.coming-buttons { display: flex; gap: 8px; }
-.coming-buttons .btn { flex: 1; padding: 0 6px; }
+.btn-coming { width: 100%; margin-top: 14px; }
 
 /* Pick your own time */
 
