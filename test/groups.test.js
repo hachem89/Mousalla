@@ -43,13 +43,13 @@ describe('groups', () => {
 
   it('always has the main group at the adhan, even when empty', () => {
     const g = listGroups(dhuhr, null, at('11:50:00'));
-    expect(g).toEqual([{ id: MAIN, start: tunis('12:04:00'), isMain: true, started: false, boys: 0, girls: false, wait: null }]);
+    expect(g).toEqual([{ id: MAIN, start: tunis('12:04:00'), started: false, boys: 0, girls: false, wait: null }]);
   });
 
   it('lists the groups of this prayer by time', () => {
     const g = listGroups(dhuhr, data, at('12:10:00'));
     expect(g.map((x) => x.id)).toEqual([MAIN, '2026-11-17:dhuhr:12:07', '2026-11-17:dhuhr:12:40']);
-    expect(g[1]).toMatchObject({ boys: 2, girls: true, wait: 3, started: true, isMain: false });
+    expect(g[1]).toMatchObject({ boys: 2, girls: true, wait: 3, started: true });
     expect(g[2].started).toBe(false);
   });
 

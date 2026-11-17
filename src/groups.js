@@ -46,7 +46,7 @@ export function listGroups(prayer, data, now, cfg = config) {
   const groups = { [mainId]: { boys: 0, girls: false, wait: null }, ...data?.groups };
   return Object.entries(groups)
     .filter(([id]) => id.startsWith(prefix))
-    .map(([id, counts]) => ({ ...counts, id, start: groupStart(id), isMain: id === mainId }))
+    .map(([id, counts]) => ({ ...counts, id, start: groupStart(id) }))
     .filter((g) => g.start.getTime() >= start && g.start.getTime() < end)
     .filter((g) => g.start.getTime() + cfg.groupMinutes * MINUTE > now)
     .map((g) => ({ ...g, started: g.start.getTime() <= now }))

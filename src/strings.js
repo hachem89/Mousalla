@@ -38,17 +38,17 @@ export default {
   loading: 'Loading the board…',
   boys: (n) => `Boys: ${n}`,
   girls: (yes) => `Girls: ${yes ? 'Yes' : 'No'}`,
-  mainGroup: 'Main group',
   prayingNow: 'Praying now',
-  openNow: 'Open now, nobody yet',
+  now: 'Now',
+  nobodyYet: 'Nobody yet',
   startsIn: (min) => `Starts in ${min} min`,
   wait: (min) => (min > 0 ? `Someone is coming. Wait about ${min} min.` : 'Someone is arriving now. Wait for them.'),
   groupLabel: (time) => `${time} group`,
 
   // Hints above the board
-  hintBefore: (name, time) => `${name} starts at ${time}. Join the main group, or pick your own time.`,
+  hintBefore: (name, time) => `${name} starts at ${time}. Join a group, or pick another time.`,
   hintPraying: `People are praying now. Tap "I'm coming" so they wait for you.`,
-  hintNobody: `Nobody is praying right now. Tap "I'm coming" to start a group, or pick your own time.`,
+  hintNobody: `Nobody is praying right now. Tap "I'm coming" to start a group, or pick another time.`,
   hintMineLater: (time) => `You'll pray at ${time}. Others can see it and join you.`,
   hintMineNow: `Your group is praying now. Tap "I'm coming" so they wait for you.`,
   hintComing: "Others can see you're coming. They'll wait for you.",
@@ -59,8 +59,8 @@ export default {
   comingTitle: "I'm coming, wait for me:",
   minutes: (m) => `${m} min`,
   comingLabel: (m) => `I'm coming in ${m} minutes, wait for me`,
-  ownTitle: "Can't make it? Pick your own time",
-  ownLabel: 'My time',
+  ownTitle: 'Other time',
+  ownLabel: 'Time I will pray',
   ownCreate: 'Create group',
 
   // Group buttons and my state
