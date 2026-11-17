@@ -65,6 +65,16 @@ document.getElementById('app').innerHTML = `
     </section>
   </main>
 
+  <dialog class="card dialog" id="howmany" aria-labelledby="howmany-title" aria-describedby="howmany-hint">
+    <h2 class="howmany-title" id="howmany-title">${t.howMany}</h2>
+    <p class="small" id="howmany-hint">${t.howManyHint}</p>
+    <div class="count-grid">
+      ${Array.from({ length: config.maxFriends + 1 }, (_, i) => i + 1).map((n) => `
+        <button class="btn${n === 1 ? ' count-me' : ''}" type="button" data-count="${n}" aria-label="${t.countLabel(n)}">${n === 1 ? `1<small>${t.justMe}</small>` : n}</button>`).join('')}
+    </div>
+    <button class="btn" type="button" id="howmany-cancel">${t.cancelDialog}</button>
+  </dialog>
+
   <dialog class="card dialog" id="settings" aria-labelledby="settings-title">
     <h2 class="label" id="settings-title">${t.settings}</h2>
     <p>${t.iAm}</p>

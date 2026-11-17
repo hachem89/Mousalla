@@ -28,12 +28,12 @@ Contents: [How it works](#how-it-works) · [Privacy](#privacy) ·
   for them." No minutes are added up: the imam counts the boys in the room
   and compares with **Boys: N**, which includes the boys who are coming.
 - **Join** any group on the board, or **I can't come** to leave yours.
-- **Friends with me: − N +.** Coming with classmates? Set how many (0 to 10)
-  before joining, or change it later. Boys' friends are added to **Boys: N**;
-  girls' friends change nothing, since girls are only ever Yes/No.
-- **The room.** For the group praying now (yours first), or the next group
-  when nobody is praying yet, a small pixel drawing
-  of the prayer room: the mihrab, the imam's place, then rows of 5, 7, 7 and 7
+- **How many are you?** When a boy taps Join, "I'm coming" or Create group,
+  a small window asks how many people are coming: **1 (just me)** to **11**
+  (me and up to 10 friends). Later, "Change" in your group updates it. Friends
+  are added to **Boys: N**. Girls are not asked, since girls are only ever
+  Yes/No.
+- **The room.** Every group has a small pixel drawing of the prayer room: the mihrab, the imam's place, then rows of 5, 7, 7 and 7
   places. Boys fill it in order (each row from the middle out): solid for boys
   in the group, dashed for boys on the way. Girls are never drawn one by one,
   only a curtain at the back that says "Girls: Yes/No". The imam can compare
