@@ -1,0 +1,16 @@
+# Render blueprint: one free web service.
+# The board lives in memory, so keep a single instance.
+services:
+  - type: web
+    name: mousalla
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: TRUST_PROXY
+        value: "1"
