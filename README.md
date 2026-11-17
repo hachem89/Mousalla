@@ -5,6 +5,9 @@ A live board for the prayer room at INSAT (Tunis).
 It shows the prayer times and lets people say when they will come and pray, so
 others can join them and wait for each other.
 
+**Live:** https://mousalla-nvsu.onrender.com · Poster for the room:
+https://mousalla-nvsu.onrender.com/poster.html
+
 Contents: [How it works](#how-it-works) · [Privacy](#privacy) ·
 [Run it](#run-it) · [Configuration](#configuration) ·
 [Prayer times](#how-prayer-times-are-computed) · [Deploy](#deploy) ·
