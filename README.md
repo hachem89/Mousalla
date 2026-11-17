@@ -32,7 +32,7 @@ Contents: [How it works](#how-it-works) · [Privacy](#privacy) ·
 - **How many are you?** When a boy taps Join, "I'm coming" or Create group,
   a small window asks how many people are coming: **1 (just me)** to **11**
   (me and up to 10 friends). Later, "Change" in your group updates it. Friends
-  are added to **Boys: N**. Girls are not asked, since girls are only ever
+  are added to the room drawing. Girls are not asked, since girls are only ever
   Yes/No.
 - **The room.** Every group has a small pixel drawing of the prayer room: the mihrab, the imam's place, then rows of 5, 7, 7 and 7
   places. Boys fill it in order (each row from the middle out): solid for boys
