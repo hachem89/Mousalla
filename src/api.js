@@ -7,6 +7,7 @@ async function request(path, body) {
       method: body ? 'POST' : 'GET',
       headers: { 'x-device-token': getToken(), ...(body && { 'content-type': 'application/json' }) },
       body: body && JSON.stringify(body),
+      signal: AbortSignal.timeout?.(8000), // give up on very slow connections
     });
     const data = await res.json();
     return res.ok ? { ok: true, data } : { ok: false, error: data.error || 'error' };

@@ -38,6 +38,7 @@ export default {
   boys: (n) => `Boys: ${n}`,
   girls: (yes) => `Girls: ${yes ? 'Yes' : 'No'}`,
   loading: 'Loading…',
+  noData: 'No data',
   join: 'Join',
   move: 'Move here',
   yourSpot: 'Your spot ✓',

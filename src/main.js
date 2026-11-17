@@ -157,10 +157,14 @@ function apply(result) {
   tick();
 }
 
+let refreshing = false;
+
 async function refresh() {
-  if (!state.section || !state.key || document.hidden) return;
+  if (!state.section || !state.key || document.hidden || refreshing) return;
+  refreshing = true;
   const key = state.key;
   const result = await fetchBoard(key);
+  refreshing = false;
   if (key === state.key) apply(result);
 }
 
@@ -181,7 +185,7 @@ function nowSlotHtml(s) {
   const mine = state.board?.mine?.slotId === s.id ? state.board.mine.state : null;
   const range = `${formatTime(s.start)}–${formatTime(s.end)}`;
 
-  const counts = state.board ? `${t.boys(data.boys)} (${t.hereCount(data.here)}) · ${t.girls(data.girls)}` : t.loading;
+  const counts = state.board ? `${t.boys(data.boys)} (${t.hereCount(data.here)}) · ${t.girls(data.girls)}` : state.error ? t.noData : t.loading;
   const wait = data.wait === null ? '' : `<p class="now-wait">${t.wait(data.wait)}</p>`;
   const me = mine ? `<p class="now-me">${t.myState[mine]}</p>` : '';
 
@@ -212,7 +216,7 @@ function laterSlotHtml(s) {
   const action = isMine ? t.yourSpot
     : !s.canJoin ? t.opensAt(formatTime(new Date(s.start - JOIN_AHEAD_MS)))
     : mine ? t.move : t.join;
-  const counts = state.board ? `${t.boys(data.boys)} · ${t.girls(data.girls)}` : t.loading;
+  const counts = state.board ? `${t.boys(data.boys)} · ${t.girls(data.girls)}` : state.error ? t.noData : t.loading;
   return `<li class="slot${isMine ? ' is-mine' : ''}">
     <button class="slot-btn" type="button" data-act="join" data-slot="${s.id}" aria-pressed="${isMine}"${s.canJoin ? '' : ' disabled'}>
       <span class="slot-time">${time}</span>
