@@ -14,21 +14,26 @@ Contents: [How it works](#how-it-works) · [Privacy](#privacy) ·
 
 - On first launch you answer one question: **Boy or Girl?** (changeable in
   settings, the button top right).
-- Each prayer is split into 15-minute slots starting at the adhan. Tap a slot to
-  say you will pray then. Tap another slot to move, or **Cancel**.
-- Every slot shows **Boys: N** and **Girls: Yes/No**. The board refreshes every
+- **Groups, not fixed slots.** You choose the time you will pray ("Now", or
+  any 5-minute step until the end of the prayer's window). Everyone who chose
+  the same time is one group. Others see the group and can tap **Pray with
+  them**.
+- If you choose a time within 10 minutes of an existing group, the app asks
+  "A group already prays at 12:10. Pray with them?" so people end up together.
+- Every group shows **Boys: N** and **Girls: Yes/No**. You can switch group,
+  choose a different time, or tap **I can't come**. The board refreshes every
   5 seconds.
 - The board shows the current prayer while people can still come (its window),
-  then the next prayer. Slots open 2 hours before they start.
-- For the slot happening **now**: a big **I'm here** button, and **Going now**
+  then the next prayer. Times can be chosen up to 2 hours ahead.
+- Once your group's time has come: a big **I'm here** button, and **On my way**
   with an arrival estimate (2, 5 or 10 min). Everyone sees how many boys are
-  here and "Someone is on the way: wait about N min".
-- **Imam banner**: on the Boys' view, when at least one girl is in the current
-  slot (joined, on the way or here), a big banner says "Girls are praying behind
-  you today. Please pray aloud."
-- **Expiry**: "going" ends 5 minutes after the estimated arrival, "here" after
-  20 minutes, and every spot ends when its slot ends. A new prayer starts with
-  an empty board.
+  already here and "Someone is on the way. Wait about N min."
+- **Imam banner**: on the Boys' view, when a group praying now has at least
+  one girl (joined, on the way or here), a big banner says "Girls are praying
+  behind you today. Please pray aloud."
+- **Expiry**: a group leaves the board 15 minutes after its time. "On my way"
+  ends 5 minutes after the estimated arrival, "here" after 20 minutes (both at
+  the latest when the group ends). A new prayer starts with an empty board.
 
 ## Install and offline
 
@@ -51,11 +56,12 @@ These are promises, not goals:
   token only lets you move or cancel your own spot, and stops one phone from
   joining twice.
 - The server keeps, **in memory only** (never on disk): a salted hash of the
-  token, boy/girl, the slot, a state (joined / going / here, with the arrival
-  estimate) and an expiry time. Every spot disappears when its slot ends. A
+  token, boy/girl, the group (its time), a state (joined / going / here, with
+  the arrival estimate) and an expiry time. Every spot disappears when its group
+  ends. A
   restart wipes everything.
 - **Girls are never counted.** The server itself only ever sends "girls: yes or
-  no" per slot; the number of girls never leaves it. Boys' counts are public.
+  no" per group; the number of girls never leaves it. Boys' counts are public.
 - The server does not log requests, IP addresses or tokens. IPs and tokens are
   only used, hashed, for rate limiting.
 
@@ -86,8 +92,10 @@ App settings are in [`src/config.js`](src/config.js):
 | `timeZone` | `Africa/Tunis` | Used for "today" and for showing times |
 | `fajrAngle`, `ishaAngle` | `18`, `18` | Sun angles below the horizon |
 | `offsets` | all `0` | Minutes added to each time, to match the official timetable |
-| `slotMinutes` | `15` | Length of a slot |
-| `windows` | Fajr 45, Dhuhr 75, Asr 60, Maghrib 40, Isha 60 | Minutes after the adhan that slots cover |
+| `windows` | Fajr 45, Dhuhr 75, Asr 60, Maghrib 40, Isha 60 | Minutes after the adhan in which times can be chosen |
+| `groupMinutes` | `15` | How long a group stays on the board after its time |
+| `pickStepMinutes` | `5` | Steps between the times you can choose |
+| `suggestJoinMinutes` | `10` | Choosing a time this close to a group suggests joining it |
 | `arrivalOptions` | `[2, 5, 10]` | "Going now" arrival estimates (minutes) |
 | `goingGraceMinutes` | `5` | A "going" spot ends this long after the estimated arrival |
 | `hereMinutes` | `20` | An "I'm here" spot ends after this long |
@@ -115,19 +123,20 @@ characters).
 
 | Request | Body | Answer |
 | --- | --- | --- |
-| `GET /api/board?prayer=2026-11-17:dhuhr` | – | `{ slots: { "<slot id>": { boys, here, girls, wait } }, mine: { slotId, state } \| null }` |
-| `POST /api/join` | `{ section: "boy" \| "girl", slotId: "2026-11-17:dhuhr:12:04", state?: "joined" \| "going" \| "here", eta?: 2 \| 5 \| 10 }` | same as board |
+| `GET /api/board?prayer=2026-11-17:dhuhr` | – | `{ groups: { "<group id>": { boys, here, girls, wait } }, mine: { groupId, state } \| null }` |
+| `POST /api/join` | `{ section: "boy" \| "girl", groupId: "2026-11-17:dhuhr:12:10", state?: "joined" \| "going" \| "here", eta?: 2 \| 5 \| 10 }` | same as board |
 | `POST /api/cancel` | `{ prayer: "2026-11-17:dhuhr" }` | same as board |
 
-Per slot: `boys` = number of boys, `here` = boys who said "I'm here", `girls` =
+Per group: `boys` = number of boys, `here` = boys who said "I'm here", `girls` =
 true/false only, `wait` = minutes until the last person on the way arrives (or
-`null`). "going" needs `eta`; "going" and "here" are only accepted for a slot
-that has started.
+`null`). "going" needs `eta`; "going" and "here" are only accepted for a group
+whose time has come.
 
-Slot ids are made by the phone: date, prayer and start time (Tunis). The server
-does not compute prayer times; it only checks the id format and that the slot
-starts within 2 hours of now, and forgets the spot when the slot is over
-(start + `slotMinutes`).
+Group ids are made by the phone: date, prayer and time (Tunis), any minute. The
+first person to choose a time creates the group; there is nothing else to
+create. The server does not compute prayer times; it only checks the id format
+and that the time is within 2 hours of now, and forgets the spot when the group
+is over (time + `groupMinutes`).
 
 ## How prayer times are computed
 
@@ -190,17 +199,17 @@ from. To make a poster for another address, add `?url=`:
 
 ```
 index.html, poster.html   pages
-src/config.js             app settings (location, angles, offsets, slots)
+src/config.js             app settings (location, angles, offsets, groups)
 src/strings.js            all UI text
 src/prayer.js             prayer times (adhan) and Tunis time helpers
-src/slots.js              which prayer the board shows, slot list
+src/groups.js             which prayer the board shows, groups, time choices
 src/main.js, style.css    the app screen
 src/device.js, api.js     Boy/Girl choice, device token, server calls
 src/sw.js                 offline cache (filled in at build time)
 src/poster.js, poster.css printable QR poster
 server/                   Express server, in-memory board, rate limits
 scripts/                  print times, draw icons
-test/                     prayer times, slots, server
+test/                     prayer times, groups, server
 render.yaml               Render deploy settings
 ```
 
