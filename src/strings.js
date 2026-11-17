@@ -55,11 +55,10 @@ export default {
   hintOpens: (time) => `You can join from ${time}.`,
 
   // Sections
-  prayingTitle: 'Praying now',
+  groupsTitle: (name) => `${name} groups`,
   comingTitle: "I'm coming, wait for me:",
   minutes: (m) => `${m} min`,
   comingLabel: (m) => `I'm coming in ${m} minutes, wait for me`,
-  laterTitle: 'Later groups',
   ownTitle: "Can't make it? Pick your own time",
   ownLabel: 'My time',
   ownCreate: 'Create group',

@@ -251,7 +251,6 @@ function renderBoard(prayer, now) {
   const mine = state.board?.mine ?? null;
   const myGroup = groups.find((g) => g.id === mine?.groupId);
   const praying = groups.filter((g) => g.started);
-  const later = groups.filter((g) => !g.started);
   const { start, end } = prayerWindow(prayer);
   const opensAt = start - JOIN_AHEAD_MS;
   const canJoin = now >= opensAt && now < end;
@@ -277,10 +276,9 @@ function renderBoard(prayer, now) {
 
   let html = '';
   if (canJoin && state.board) {
-    if (praying.length) {
-      html += `<h3 class="label sub-title">${t.prayingTitle}</h3>
-        <ul class="groups">${praying.map((g) => groupHtml(g, mine, now)).join('')}</ul>`;
-    }
+    // One list for all groups of this prayer; each row says "Praying now" or "Starts in N min".
+    html += `<h3 class="label sub-title">${t.groupsTitle(t.names[prayer.name])}</h3>
+      <ul class="groups">${groups.map((g) => groupHtml(g, mine, now)).join('')}</ul>`;
     if (coming.length) {
       html += `<div class="coming" role="group" aria-labelledby="coming-title">
         <h3 class="label sub-title" id="coming-title">${t.comingTitle}</h3>
@@ -288,10 +286,6 @@ function renderBoard(prayer, now) {
           ${coming.map(({ m, id }) => `<button class="btn btn-primary btn-big" type="button" data-act="coming" data-group="${id}" data-eta="${m}" aria-label="${t.comingLabel(m)}">${t.minutes(m)}</button>`).join('')}
         </div>
       </div>`;
-    }
-    if (later.length) {
-      html += `<h3 class="label sub-title">${t.laterTitle}</h3>
-        <ul class="groups">${later.map((g) => groupHtml(g, mine, now)).join('')}</ul>`;
     }
   }
 
