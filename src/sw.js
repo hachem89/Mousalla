@@ -21,6 +21,6 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== location.origin || url.pathname.startsWith('/api/')) return;
-  const key = request.mode === 'navigate' ? '/' : request;
+  const key = request.mode === 'navigate' && url.pathname === '/' ? '/' : request;
   event.respondWith(caches.match(key).then((hit) => hit || fetch(request)));
 });
