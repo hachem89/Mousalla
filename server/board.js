@@ -31,7 +31,10 @@ export function parseGroup(id, now, groupMinutes = appConfig.groupMinutes) {
   if (typeof id !== 'string') return null;
   const m = GROUP_RE.exec(id);
   if (!m || !validDate(m[1])) return null;
-  const start = Date.parse(`${m[1]}T${m[3]}:${m[4]}:00${TUNIS_OFFSET}`);
+  // The date is the day of the adhan; Isha can go past midnight, so an Isha
+  // time before noon is on the next day.
+  const nextDay = m[2] === 'isha' && Number(m[3]) < 12 ? 24 * 60 * MINUTE : 0;
+  const start = Date.parse(`${m[1]}T${m[3]}:${m[4]}:00${TUNIS_OFFSET}`) + nextDay;
   const end = start + groupMinutes * MINUTE;
   if (Math.abs(start - now) > MAX_DISTANCE || end <= now) return null;
   return { id, prayer: `${m[1]}:${m[2]}`, start, end };

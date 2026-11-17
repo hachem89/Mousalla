@@ -293,6 +293,18 @@ describe("I'm coming", () => {
   });
 });
 
+describe('Isha after midnight', () => {
+  it('an Isha time before noon is on the night after the adhan', async () => {
+    clock = tunis('23:50:00');
+    const r = await join(newToken(), 'boy', '2026-11-17:isha:00:20');
+    expect(r.status).toBe(200);
+    clock = tunis('00:34:59', '2026-11-18');
+    expect((await board(newToken(), '2026-11-17:isha')).body.groups['2026-11-17:isha:00:20'].boys).toBe(1);
+    clock = tunis('00:35:00', '2026-11-18');
+    expect((await board(newToken(), '2026-11-17:isha')).body.groups).toEqual({});
+  });
+});
+
 describe('free times', () => {
   it('any minute is a valid group, and people who pick the same time are one group', async () => {
     const a = await join(newToken(), 'boy', '2026-11-17:dhuhr:12:07');
