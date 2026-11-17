@@ -28,6 +28,16 @@ Contents: [How it works](#how-it-works) · [Privacy](#privacy) ·
   for them." No minutes are added up: the imam counts the boys in the room
   and compares with **Boys: N**, which includes the boys who are coming.
 - **Join** any group on the board, or **I can't come** to leave yours.
+- **Friends with me: − N +.** Coming with classmates? Set how many (0 to 10)
+  before joining, or change it later. Boys' friends are added to **Boys: N**;
+  girls' friends change nothing, since girls are only ever Yes/No.
+- **The room.** For the group praying now (yours first), a small pixel drawing
+  of the prayer room: the mihrab, the imam's place, then rows of 5, 7, 7 and 7
+  places. Boys fill it in order (each row from the middle out): solid for boys
+  in the group, dashed for boys on the way. Girls are never drawn one by one,
+  only a curtain at the back that says "Girls: Yes/No". The imam can compare
+  the drawing with the room: when there are no dashed places left, everyone
+  is there.
 - **Other time.** Type the time you can come; it becomes a group that
   others can join. It must be inside the prayer's time (for example Dhuhr
   12:04–14:42 when Asr is at 14:48), so nobody can announce Dhuhr during Asr.
@@ -107,6 +117,7 @@ App settings are in [`src/config.js`](src/config.js):
 | `suggestJoinMinutes` | `10` | Picking a time this close to a group suggests joining it |
 | `comingMinutes` | `2` | What "I'm coming" means; a new group starts this many minutes from now when nobody is praying |
 | `comingExpiresMinutes` | `7` | A "coming" spot ends this long after the tap |
+| `maxFriends` | `10` | Most friends one person can bring (checked by the server) |
 | `pollMs` | `5000` | How often the board refreshes |
 
 Server settings are in [`server/config.js`](server/config.js) and can be set with
@@ -130,13 +141,14 @@ characters).
 
 | Request | Body | Answer |
 | --- | --- | --- |
-| `GET /api/board?prayer=2026-11-17:dhuhr` | – | `{ groups: { "<group id>": { boys, girls, coming } }, mine: { groupId, state } \| null }` |
-| `POST /api/join` | `{ section: "boy" \| "girl", groupId: "2026-11-17:dhuhr:12:10", state?: "joined" \| "going" }` | same as board |
+| `GET /api/board?prayer=2026-11-17:dhuhr` | – | `{ groups: { "<group id>": { boys, boysComing, girls, coming } }, mine: { groupId, state, friends } \| null }` |
+| `POST /api/join` | `{ section: "boy" \| "girl", groupId: "2026-11-17:dhuhr:12:10", state?: "joined" \| "going", friends?: 0–10 }` | same as board |
 | `POST /api/cancel` | `{ prayer: "2026-11-17:dhuhr" }` | same as board |
 
-Per group: `boys` = number of boys (joined or coming), `girls` = true/false
-only, `coming` = true/false, someone said "I'm coming". `"going"` is "I'm
-coming".
+Per group: `boys` = number of boys (joined or coming, friends included),
+`boysComing` = how many of them are on the way, `girls` = true/false only (their
+friends are never counted), `coming` = true/false, someone said "I'm coming".
+`"going"` is "I'm coming".
 
 Group ids are made by the phone: date, prayer and time (Tunis), any minute. The
 first person to choose a time creates the group; there is nothing else to
@@ -211,7 +223,8 @@ src/prayer.js             prayer times (adhan) and Tunis time helpers
 src/groups.js             which prayer the board shows, groups, time choices
 src/main.js, style.css    the page, Boy/Girl, settings, clock
 src/hero.js               the prayer card (current prayer big, next small)
-src/board.js              the groups, "I'm coming", "Other time"
+src/board.js              the groups, "I'm coming", friends, "Other time"
+src/room.js               the pixel drawing of the prayer room
 src/device.js, api.js     Boy/Girl choice, device token, server calls
 src/sw.js                 offline cache (filled in at build time)
 src/poster.js, poster.css printable QR poster
