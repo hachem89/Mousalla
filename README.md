@@ -20,9 +20,11 @@ Contents: [How it works](#how-it-works) · [Privacy](#privacy) ·
 - When a prayer enters, a group at the adhan time is on the board
   automatically, even before anyone joins it.
 - **I'm coming, wait for me.** One tap (meaning "about 2 minutes") tells
-  everyone to wait. It joins the group praying now (the one that started most
-  recently), or, if nobody is praying right now, starts a new group in 2
-  minutes that others can join. The group shows "Someone is on the way. Wait
+  everyone to wait. It joins the group praying now (yours, or the one that
+  started most recently), but only if that group is still on 2 minutes from
+  now. Otherwise you would miss it, so, like a second jama'ah, it starts a new
+  group in 2 minutes that others can join, as long as that is still inside the
+  prayer's time. The server applies the same rule. The group shows "Someone is on the way. Wait
   for them." No minutes are added up: the imam counts the boys in the room
   and compares with **Boys: N**, which includes the boys who are coming.
 - **Join** any group on the board, or **I can't come** to leave yours.
