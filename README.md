@@ -12,19 +12,19 @@ Contents: [How it works](#how-it-works) · [Privacy](#privacy) ·
 
 ## How it works
 
-- On first launch you answer one question: **Boy or Girl?** (changeable in
-  settings, the button top right).
+- On first launch you answer one question: **Boy or Girl?** (changeable with
+  the **Settings** button, top right, which also has **Install app**).
 - The top card shows the **current prayer** in big (with "Started 26 min
   ago"), and the next prayer in small below it with a countdown. Before Fajr
   and between sunrise and Dhuhr, the next prayer is shown big with a countdown.
-- **Main group**: when a prayer enters, a group at the adhan time is on the
-  board automatically, even before anyone joins it.
+- When a prayer enters, a group at the adhan time is on the board
+  automatically, even before anyone joins it.
 - **I'm coming, wait for me: 1 / 2 / 5 min.** One tap tells everyone to wait.
   It joins the group praying now (the one that started most recently), or, if
   nobody is praying right now, starts a new group in that many minutes that
   others can join. Everyone sees "Someone is coming. Wait about N min."
 - **Join** any group on the board, or **I can't come** to leave yours.
-- **Can't make it? Pick your own time.** Type a time; it becomes a group that
+- **Other time.** Type the time you can come; it becomes a group that
   others can join. It must be inside the prayer's time (for example Dhuhr
   12:04–13:18), so nobody can announce Dhuhr during Asr. If the time is within
   10 minutes of an existing group, the app asks "A group already prays at
@@ -80,7 +80,6 @@ npm start        # serve it on http://localhost:3000
 npm test         # run the tests
 npm run times    # print today's and tomorrow's times
 npm run times -- 2026-11-17   # times for a given day
-node scripts/icons.js         # redraw the PNG icons from public/icon.svg
 ```
 
 While developing, run `npm run dev:server` and `npm run dev` side by side and
@@ -112,9 +111,8 @@ environment variables:
 | `TRUST_PROXY` | `0` | Number of proxies in front of the app (set `1` on most hosts) |
 | `MAX_ENTRIES` | `5000` | Maximum spots kept at once |
 
-Rate limits (requests per minute) are in the same file: 30 reads and 20 writes
-per phone, 3000 reads and 600 writes per IP address (a whole campus can share
-one address).
+Rate limits (requests per minute) are in the same file: 40 per phone and 3000
+per IP address (a whole campus can share one address).
 
 All UI text is in [`src/strings.js`](src/strings.js).
 
@@ -204,12 +202,14 @@ src/config.js             app settings (location, angles, offsets, groups)
 src/strings.js            all UI text
 src/prayer.js             prayer times (adhan) and Tunis time helpers
 src/groups.js             which prayer the board shows, groups, time choices
-src/main.js, style.css    the app screen
+src/main.js, style.css    the page, Boy/Girl, settings, clock
+src/hero.js               the prayer card (current prayer big, next small)
+src/board.js              the groups, "I'm coming", "Other time"
 src/device.js, api.js     Boy/Girl choice, device token, server calls
 src/sw.js                 offline cache (filled in at build time)
 src/poster.js, poster.css printable QR poster
 server/                   Express server, in-memory board, rate limits
-scripts/                  print times, draw icons
+scripts/                  print prayer times
 test/                     prayer times, groups, server
 render.yaml               Render deploy settings
 ```
