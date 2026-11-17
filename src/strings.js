@@ -86,6 +86,7 @@ export default {
     offline: "Offline: can't reach the board. Prayer times still work. Retrying…",
     too_many_requests: 'Too many taps. Wait a minute.',
     board_full: 'The board is full right now. Try again soon.',
+    too_late: 'That group is finishing. Tap again to start a new one.',
     default: 'Something went wrong. Try again.',
   },
 

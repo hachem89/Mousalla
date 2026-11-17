@@ -88,6 +88,18 @@ describe("I'm coming", () => {
     expect(comingGroupId(dhuhr, groupsAt('12:12:00', d), at('12:12:00'))).toBe('2026-11-17:dhuhr:12:10');
   });
 
+  it('starts a new group when the group praying now ends before you can arrive', () => {
+    // main group 12:04 ends 12:19; at 12:17:30 you would arrive after it ended
+    expect(comingGroupId(dhuhr, groupsAt('12:17:00'), at('12:17:00'))).toBe(MAIN);
+    expect(comingGroupId(dhuhr, groupsAt('12:17:30'), at('12:17:30'))).toBe('2026-11-17:dhuhr:12:19');
+  });
+
+  it('prefers my own group when it is still on', () => {
+    const d = { groups: { '2026-11-17:dhuhr:12:10': { boys: 1, girls: false, coming: false } } };
+    expect(comingGroupId(dhuhr, groupsAt('12:12:00', d), at('12:12:00'), MAIN)).toBe(MAIN);
+    expect(comingGroupId(dhuhr, groupsAt('12:12:00', d), at('12:12:00'))).toBe('2026-11-17:dhuhr:12:10');
+  });
+
   it('starts a new group in 2 minutes when nobody is praying now', () => {
     expect(comingGroupId(dhuhr, groupsAt('12:40:30'), at('12:40:30'))).toBe('2026-11-17:dhuhr:12:42');
   });

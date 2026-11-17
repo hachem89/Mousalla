@@ -53,14 +53,18 @@ export function listGroups(prayer, data, now, cfg = config) {
     .sort((a, b) => a.start - b.start);
 }
 
-// Where "I'm coming" goes: the group that started most recently,
-// or, when nobody is praying now, a new group starting in 2 minutes.
-// null when the prayer has not started yet or its window is over.
-export function comingGroupId(prayer, groups, now, cfg = config) {
+// Where "I'm coming" goes. "I'm coming" means arriving in about 2 minutes, so it only
+// joins a group that has started and is still on by then: my group if it is one of
+// them, otherwise the one that started most recently. When there is none, it starts
+// a new group in 2 minutes (like a second jama'ah), if that is still inside the
+// prayer's window. null when the prayer has not started yet or it is too late.
+export function comingGroupId(prayer, groups, now, mineId = null, cfg = config) {
   const { start, end } = prayerWindow(prayer, cfg);
   if (now < start || now >= end) return null;
-  const active = groups.filter((g) => g.started).at(-1);
-  if (active) return active.id;
+  const arrival = now + cfg.comingMinutes * MINUTE;
+  const open = groups.filter((g) => g.started && g.start.getTime() + cfg.groupMinutes * MINUTE >= arrival);
+  const target = open.find((g) => g.id === mineId) ?? open.at(-1);
+  if (target) return target.id;
   const at = Math.floor(now / MINUTE) * MINUTE + cfg.comingMinutes * MINUTE;
   return at < end ? groupId(prayer, new Date(at)) : null;
 }

@@ -151,9 +151,9 @@ function render(prayer, now) {
   const opensAt = start - JOIN_AHEAD_MS;
   const canJoin = now >= opensAt && now < end;
 
-  // "I'm coming": to my group if it has started, otherwise to the group praying now
-  // (or a new group in 2 minutes when nobody is).
-  const comingId = myGroup?.started ? myGroup.id : comingGroupId(prayer, groups, now);
+  // "I'm coming": to my group or the group praying now if it is still on in 2 minutes,
+  // otherwise a new group in 2 minutes.
+  const comingId = comingGroupId(prayer, groups, now, mine?.groupId);
 
   // Imam banner: only on the boys' view, when a girl is in a group that is praying now.
   $('imam').hidden = !(state.section === 'boy' && praying.some((g) => g.girls));
