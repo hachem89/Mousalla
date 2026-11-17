@@ -19,4 +19,19 @@ export default {
     maghrib: 0,
     isha: 0,
   },
+
+  // Each prayer is split into slots of this many minutes, starting at the adhan.
+  slotMinutes: 15,
+
+  // How long after the adhan people may still come and pray together (minutes).
+  windows: {
+    fajr: 45,
+    dhuhr: 75,
+    asr: 60,
+    maghrib: 40,
+    isha: 60,
+  },
+
+  // How often the board is refreshed (milliseconds).
+  pollMs: 5000,
 };
