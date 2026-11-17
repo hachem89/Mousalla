@@ -32,6 +32,14 @@ export default {
     isha: 60,
   },
 
+  // "Going now" arrival estimates (minutes). A "going" spot expires this many
+  // minutes after the estimated arrival.
+  arrivalOptions: [2, 5, 10],
+  goingGraceMinutes: 5,
+
+  // An "I'm here" spot expires after this many minutes.
+  hereMinutes: 20,
+
   // How often the board is refreshed (milliseconds).
   pollMs: 5000,
 };

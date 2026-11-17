@@ -12,6 +12,7 @@ let server;
 let base;
 let n = 0;
 
+const slot = (boys, extra = {}) => ({ boys, here: 0, girls: false, wait: null, ...extra });
 const newToken = () => (++n).toString(16).padStart(32, 'a');
 
 async function start(config = serverConfig) {
@@ -48,10 +49,10 @@ describe('join, move, cancel', () => {
     const me = newToken();
     const r = await join(me, 'boy', SLOT_A);
     expect(r.status).toBe(200);
-    expect(r.body).toEqual({ slots: { [SLOT_A]: { boys: 1, girls: false } }, mine: SLOT_A });
+    expect(r.body).toEqual({ slots: { [SLOT_A]: slot(1) }, mine: { slotId: SLOT_A, state: 'joined' } });
 
     const other = await board(newToken());
-    expect(other.body).toEqual({ slots: { [SLOT_A]: { boys: 1, girls: false } }, mine: null });
+    expect(other.body).toEqual({ slots: { [SLOT_A]: slot(1) }, mine: null });
   });
 
   it('a device has one spot per prayer: joining again moves it', async () => {
@@ -59,7 +60,7 @@ describe('join, move, cancel', () => {
     await join(me, 'boy', SLOT_A);
     await join(me, 'boy', SLOT_A);
     const r = await join(me, 'boy', SLOT_B);
-    expect(r.body).toEqual({ slots: { [SLOT_B]: { boys: 1, girls: false } }, mine: SLOT_B });
+    expect(r.body).toEqual({ slots: { [SLOT_B]: slot(1) }, mine: { slotId: SLOT_B, state: 'joined' } });
   });
 
   it('cancels', async () => {
@@ -95,7 +96,7 @@ describe('girls are never counted', () => {
     await join(newToken(), 'girl', SLOT_A);
     const three = await board(viewer);
 
-    expect(one.body).toEqual({ slots: { [SLOT_A]: { boys: 0, girls: true } }, mine: null });
+    expect(one.body).toEqual({ slots: { [SLOT_A]: slot(0, { girls: true }) }, mine: null });
     expect(three.body).toEqual(one.body);
   });
 
@@ -107,9 +108,9 @@ describe('girls are never counted', () => {
     await join(newToken(), 'girl', SLOT_A);
 
     for (const r of [joined, await board(girl), await board(newToken()), await cancel(newToken())]) {
-      expect(r.body.slots[SLOT_A]).toEqual({ boys: 2, girls: true });
+      expect(r.body.slots[SLOT_A]).toEqual(slot(2, { girls: true }));
       for (const s of Object.values(r.body.slots)) {
-        expect(Object.keys(s).sort()).toEqual(['boys', 'girls']);
+        expect(Object.keys(s).sort()).toEqual(['boys', 'girls', 'here', 'wait']);
         expect(typeof s.girls).toBe('boolean');
       }
     }
@@ -228,5 +229,87 @@ describe('abuse protection', () => {
     expect((await join(newToken(), 'boy', SLOT_A)).status).toBe(503);
     // moving an existing spot still works when full
     expect((await join(a, 'boy', SLOT_B)).status).toBe(200);
+  });
+});
+
+describe('going now and I am here', () => {
+  const go = (token, section, slotId, eta) => api(token, '/api/join', { section, slotId, state: 'going', eta });
+  const here = (token, section, slotId) => api(token, '/api/join', { section, slotId, state: 'here' });
+
+  beforeEach(() => { clock = tunis('12:06:00'); });
+
+  it('shows who is here and how long to wait for people on the way', async () => {
+    await here(newToken(), 'boy', SLOT_A);
+    await join(newToken(), 'boy', SLOT_A);
+    await go(newToken(), 'boy', SLOT_A, 2);
+    const me = newToken();
+    const r = await go(me, 'boy', SLOT_A, 5);
+    expect(r.body.slots[SLOT_A]).toEqual({ boys: 4, here: 1, girls: false, wait: 5 });
+    expect(r.body.mine).toEqual({ slotId: SLOT_A, state: 'going' });
+
+    clock = tunis('12:09:30');
+    expect((await board(newToken())).body.slots[SLOT_A].wait).toBe(2);
+  });
+
+  it('girls going or here are still only yes/no', async () => {
+    await go(newToken(), 'girl', SLOT_A, 2);
+    const a = await board(newToken());
+    await here(newToken(), 'girl', SLOT_A);
+    await here(newToken(), 'girl', SLOT_A);
+    const b = await board(newToken());
+    expect(a.body.slots[SLOT_A]).toEqual({ boys: 0, here: 0, girls: true, wait: 2 });
+    expect(b.body.slots[SLOT_A]).toEqual({ boys: 0, here: 0, girls: true, wait: 2 });
+  });
+
+  it('"going" expires 5 minutes after the estimated arrival', async () => {
+    await go(newToken(), 'boy', SLOT_A, 2); // arrives 12:08, expires 12:13
+    clock = tunis('12:12:59');
+    expect((await board(newToken())).body.slots[SLOT_A]).toEqual({ boys: 1, here: 0, girls: false, wait: 0 });
+    clock = tunis('12:13:00');
+    expect((await board(newToken())).body.slots).toEqual({});
+  });
+
+  it('"here" expires after 20 minutes, or when the slot ends if sooner', async () => {
+    clock = tunis('12:20:00');
+    await here(newToken(), 'boy', SLOT_B); // slot 12:19-12:34, 20 min would be 12:40
+    clock = tunis('12:33:59');
+    expect((await board(newToken())).body.slots[SLOT_B].here).toBe(1);
+    clock = tunis('12:34:00');
+    expect((await board(newToken())).body.slots).toEqual({});
+  });
+
+  it('"here" lasts 20 minutes with a longer slot', async () => {
+    server.close();
+    const { createBoard } = await import('../server/board.js');
+    const b = createBoard({ maxEntries: 10 });
+    const slot = { id: SLOT_A, prayer: PRAYER, start: tunis('12:04:00'), end: tunis('13:04:00') };
+    b.join('x', 'boy', slot, tunis('12:06:00'), 'here');
+    expect(b.view('x', PRAYER, tunis('12:25:59')).slots[SLOT_A].here).toBe(1);
+    expect(b.view('x', PRAYER, tunis('12:26:00')).slots).toEqual({});
+    await start();
+  });
+
+  it('moving from "here" to a later slot makes it a plain spot again', async () => {
+    const me = newToken();
+    await here(me, 'boy', SLOT_A);
+    const r = await join(me, 'boy', SLOT_B);
+    expect(r.body.mine).toEqual({ slotId: SLOT_B, state: 'joined' });
+    expect(r.body.slots[SLOT_A]).toBeUndefined();
+  });
+
+  it('rejects bad states and arrival estimates', async () => {
+    for (const body of [
+      { state: 'praying' }, { state: 1 },
+      { state: 'going' }, { state: 'going', eta: 3 }, { state: 'going', eta: '5' }, { state: 'going', eta: -2 },
+    ]) {
+      const r = await api(newToken(), '/api/join', { section: 'boy', slotId: SLOT_A, ...body });
+      expect(r.status, JSON.stringify(body)).toBe(400);
+    }
+  });
+
+  it('cannot be "going" or "here" for a slot that has not started', async () => {
+    expect((await go(newToken(), 'boy', SLOT_B, 5)).status).toBe(400);
+    expect((await here(newToken(), 'boy', SLOT_B)).status).toBe(400);
+    expect((await join(newToken(), 'boy', SLOT_B)).status).toBe(200);
   });
 });
