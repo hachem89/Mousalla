@@ -63,6 +63,7 @@ export default {
 
   // Room drawing
   roomTitle: (time) => `In the room · ${time} group`,
+  roomTitleLater: (time, min) => `In the room · ${time} group (starts in ${min} min)`,
   roomLabel: (boys, coming, girls) => `Prayer room: ${boys} ${boys === 1 ? 'boy' : 'boys'}${coming ? `, ${coming} on the way` : ''}. Girls: ${girls ? 'Yes' : 'No'}.`,
   legendHere: 'In the group',
   legendComing: 'On the way',

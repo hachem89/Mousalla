@@ -185,10 +185,15 @@ function render(prayer, now) {
 
   let html = '';
   if (canJoin && state.board) {
-    // The room, drawn for the group praying now (mine first).
-    const shown = praying.find((g) => g.id === mine?.groupId) ?? praying.at(-1);
+    // The room, drawn for the group praying now (mine first), or, when nobody is
+    // praying yet, for the next group (mine first).
+    const later = groups.filter((g) => !g.started);
+    const shown = praying.find((g) => g.id === mine?.groupId) ?? praying.at(-1)
+      ?? later.find((g) => g.id === mine?.groupId) ?? later[0];
     if (shown) {
-      html += `<h3 class="label sub-title">${t.roomTitle(formatTime(shown.start))}</h3>${roomHtml(shown)}`;
+      const time = formatTime(shown.start);
+      const title = shown.started ? t.roomTitle(time) : t.roomTitleLater(time, minutesUntil(shown.start, now));
+      html += `<h3 class="label sub-title">${title}</h3>${roomHtml(shown)}`;
     }
     // One list for all groups of this prayer; each row says "Praying now" or "Starts in N min".
     if (groups.length) {
