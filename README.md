@@ -202,8 +202,14 @@ Good to know about the free plan:
 - After 15 minutes without visitors the server sleeps; the next visit wakes it
   in about a minute. Installed phones still open instantly (the app is cached)
   and show "Offline… Retrying" until the server is awake.
-- Sleeping or redeploying wipes the board. That is fine: spots only live for
-  one prayer anyway.
+- Sleeping or redeploying wipes the board, including groups created in
+  advance.
+
+To keep it awake, use a free uptime monitor (for example
+[UptimeRobot](https://uptimerobot.com)) that requests
+`https://<service-name>.onrender.com/health` every 5 minutes. `/health` only
+answers `ok`; the monitor never sees users or the board. Running all month
+uses at most 744 of the 750 free hours Render gives each month.
 - Rate limiting by IP relies on `TRUST_PROXY=1`. If every visitor seems to share
   one address, raise it to match the number of proxies in front of the app.
 
