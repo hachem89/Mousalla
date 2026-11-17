@@ -48,13 +48,10 @@ export function createApp({ now = () => Date.now(), staticDir, config = serverCo
     if (!TOKEN_RE.test(token)) return fail(res, 400, 'bad_token');
 
     const t = now();
-    const write = req.method !== 'GET';
     const tokenHash = hash(token);
     const ipHash = hash(req.ip || '');
     const { limits } = config;
-    const ok = write
-      ? limiter.allow(`wt|${tokenHash}`, limits.writePerToken, t) && limiter.allow(`wi|${ipHash}`, limits.writePerIp, t)
-      : limiter.allow(`rt|${tokenHash}`, limits.readPerToken, t) && limiter.allow(`ri|${ipHash}`, limits.readPerIp, t);
+    const ok = limiter.allow(`t|${tokenHash}`, limits.perToken, t) && limiter.allow(`i|${ipHash}`, limits.perIp, t);
     if (!ok) return fail(res, 429, 'too_many_requests');
 
     req.tokenHash = tokenHash;

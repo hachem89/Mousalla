@@ -10,10 +10,9 @@ export default {
   maxEntries: Number(process.env.MAX_ENTRIES) || 5000,
 
   // Requests allowed per minute. A whole campus can share one IP, so IP limits are high.
+  // A phone refreshes 12 times a minute, which leaves room for taps.
   limits: {
-    readPerToken: 30,
-    writePerToken: 20,
-    readPerIp: 3000,
-    writePerIp: 600,
+    perToken: 40,
+    perIp: 3000,
   },
 };

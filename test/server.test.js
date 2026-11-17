@@ -199,10 +199,10 @@ describe('invalid input', () => {
 });
 
 describe('abuse protection', () => {
-  it('rate limits writes per device', async () => {
+  it('rate limits per device', async () => {
     const me = newToken();
     const statuses = [];
-    for (let i = 0; i < serverConfig.limits.writePerToken + 1; i++) {
+    for (let i = 0; i < serverConfig.limits.perToken + 1; i++) {
       statuses.push((await join(me, 'boy', GROUP_A)).status);
     }
     expect(statuses.at(-2)).toBe(200);
@@ -214,7 +214,7 @@ describe('abuse protection', () => {
 
   it('rate limits per IP across devices', async () => {
     server.close();
-    await start({ ...serverConfig, limits: { ...serverConfig.limits, writePerIp: 3 } });
+    await start({ ...serverConfig, limits: { ...serverConfig.limits, perIp: 3 } });
     const statuses = [];
     for (let i = 0; i < 4; i++) statuses.push((await join(newToken(), 'boy', GROUP_A)).status);
     expect(statuses).toEqual([200, 200, 200, 429]);
