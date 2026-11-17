@@ -19,10 +19,12 @@ Contents: [How it works](#how-it-works) · [Privacy](#privacy) ·
   and between sunrise and Dhuhr, the next prayer is shown big with a countdown.
 - When a prayer enters, a group at the adhan time is on the board
   automatically, even before anyone joins it.
-- **I'm coming, wait for me: 1 / 2 / 5 min.** One tap tells everyone to wait.
-  It joins the group praying now (the one that started most recently), or, if
-  nobody is praying right now, starts a new group in that many minutes that
-  others can join. Everyone sees "Someone is coming. Wait about N min."
+- **I'm coming, wait for me.** One tap (meaning "about 2 minutes") tells
+  everyone to wait. It joins the group praying now (the one that started most
+  recently), or, if nobody is praying right now, starts a new group in 2
+  minutes that others can join. The group shows "Someone is on the way. Wait
+  for them." No minutes are added up: the imam counts the boys in the room
+  and compares with **Boys: N**, which includes the boys who are coming.
 - **Join** any group on the board, or **I can't come** to leave yours.
 - **Other time.** Type the time you can come; it becomes a group that
   others can join. It must be inside the prayer's time (for example Dhuhr
@@ -37,8 +39,8 @@ Contents: [How it works](#how-it-works) · [Privacy](#privacy) ·
   one girl (joined or coming), a big banner says "Girls are praying behind you
   today. Please pray aloud."
 - **Expiry**: a group leaves the board 15 minutes after its time. "Coming"
-  ends 5 minutes after the announced arrival (at the latest when the group
-  ends). A new prayer starts with an empty board.
+  ends 7 minutes after the tap (at the latest when the group ends). Nothing
+  stays forever: a new prayer starts with an empty board.
 
 ## Install and offline
 
@@ -61,8 +63,8 @@ These are promises, not goals:
   token only lets you move or cancel your own spot, and stops one phone from
   joining twice.
 - The server keeps, **in memory only** (never on disk): a salted hash of the
-  token, boy/girl, the group (its time), a state (joined, or coming with the
-  announced arrival) and an expiry time. Every spot disappears when its group
+  token, boy/girl, the group (its time), a state (joined or coming) and an
+  expiry time. Every spot disappears when its group
   ends. A restart wipes everything.
 - **Girls are never counted.** The server itself only ever sends "girls: yes or
   no" per group; the number of girls never leaves it. Boys' counts are public.
@@ -98,8 +100,8 @@ App settings are in [`src/config.js`](src/config.js):
 | `windows` | Fajr 45, Dhuhr 75, Asr 60, Maghrib 40, Isha 60 | Minutes after the adhan in which people can pray together; your own time must be inside it |
 | `groupMinutes` | `15` | How long a group stays on the board after its time |
 | `suggestJoinMinutes` | `10` | Picking a time this close to a group suggests joining it |
-| `arrivalOptions` | `[1, 2, 5]` | "I'm coming in … min" buttons |
-| `goingGraceMinutes` | `5` | A "coming" spot ends this long after the announced arrival |
+| `comingMinutes` | `2` | What "I'm coming" means; a new group starts this many minutes from now when nobody is praying |
+| `comingExpiresMinutes` | `7` | A "coming" spot ends this long after the tap |
 | `pollMs` | `5000` | How often the board refreshes |
 
 Server settings are in [`server/config.js`](server/config.js) and can be set with
@@ -123,13 +125,13 @@ characters).
 
 | Request | Body | Answer |
 | --- | --- | --- |
-| `GET /api/board?prayer=2026-11-17:dhuhr` | – | `{ groups: { "<group id>": { boys, girls, wait } }, mine: { groupId, state } \| null }` |
-| `POST /api/join` | `{ section: "boy" \| "girl", groupId: "2026-11-17:dhuhr:12:10", state?: "joined" \| "going", eta?: 1 \| 2 \| 5 }` | same as board |
+| `GET /api/board?prayer=2026-11-17:dhuhr` | – | `{ groups: { "<group id>": { boys, girls, coming } }, mine: { groupId, state } \| null }` |
+| `POST /api/join` | `{ section: "boy" \| "girl", groupId: "2026-11-17:dhuhr:12:10", state?: "joined" \| "going" }` | same as board |
 | `POST /api/cancel` | `{ prayer: "2026-11-17:dhuhr" }` | same as board |
 
-Per group: `boys` = number of boys, `girls` = true/false only, `wait` = minutes
-until the last person who is coming arrives (or `null`). `"going"` is "I'm
-coming" and needs `eta`.
+Per group: `boys` = number of boys (joined or coming), `girls` = true/false
+only, `coming` = true/false, someone said "I'm coming". `"going"` is "I'm
+coming".
 
 Group ids are made by the phone: date, prayer and time (Tunis), any minute. The
 first person to choose a time creates the group; there is nothing else to
