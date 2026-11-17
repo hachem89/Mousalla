@@ -19,15 +19,16 @@ Contents: [How it works](#how-it-works) · [Privacy](#privacy) ·
   and between sunrise and Dhuhr, the next prayer is shown big with a countdown.
 - When a prayer enters, a group at the adhan time is on the board
   automatically, even before anyone joins it.
-- **I'm coming, wait for me.** One tap (meaning "about 2 minutes") tells
-  everyone to wait. It joins the group praying now (yours, or the one that
-  started most recently), but only if that group is still on 2 minutes from
-  now. Otherwise you would miss it, so, like a second jama'ah, it starts a new
-  group in 2 minutes that others can join, as long as that is still inside the
-  prayer's time. The server applies the same rule. The group shows "Someone is on the way. Wait
-  for them." No minutes are added up: the imam counts the boys in the room
-  and compares with **Boys: N**, which includes the boys who are coming.
-- **Join** any group on the board, or **I can't come** to leave yours.
+- **I'm coming.** A group that is praying now has an **I'm coming** button
+  (meaning "about 2 minutes, wait for me"). It is only there while the group
+  is still on 2 minutes later; the server applies the same rule. The group
+  then shows "Wait, someone is coming", and the boys on the way appear as
+  dashed places in its room. The imam can compare the room with the drawing:
+  no dashed places left means everyone is there.
+- **Start a group now.** When nobody is praying (or the group praying is
+  about to end), a big button starts a new group in 2 minutes, like a second
+  jama'ah, as long as that is still inside the prayer's time.
+- **Join** a group that starts later, or **I can't come** to leave yours.
 - **How many are you?** When a boy taps Join, "I'm coming" or Create group,
   a small window asks how many people are coming: **1 (just me)** to **11**
   (me and up to 10 friends). Later, "Change" in your group updates it. Friends
@@ -45,8 +46,9 @@ Contents: [How it works](#how-it-works) · [Privacy](#privacy) ·
   Isha times after midnight count as the same night. If the time is within
   10 minutes of an existing group, the app asks "A group already prays at
   12:40. Pray with them?" so people end up together.
-- Every group shows **Praying now** or **Starts in N min**, **Boys: N** and
-  **Girls: Yes/No**. The board refreshes every 5 seconds.
+- Every group shows **Praying now** or **Starts in N min** and its room
+  drawing (empty groups just say "Nobody yet"). The board refreshes every 5
+  seconds.
 - **Prayer windows**: people can pray together from the adhan until 5 minutes
   before the next prayer. Fajr ends 5 minutes before sunrise, Isha 5 minutes
   before the next Fajr. The board shows the current prayer during its window,
