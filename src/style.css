@@ -1,0 +1,149 @@
+:root {
+  --cream: #f6efdc;
+  --cream-dark: #ebe0c2;
+  --green: #1f4d3a;
+  --green-light: #d9e6d3;
+  --gold: #c9a227;
+  --ink: #1b1b1b;
+  --pixel: 'Pixelify Sans', monospace;
+  --body: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  --shadow: 4px 4px 0 var(--ink);
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--cream); }
+
+body {
+  margin: 0 auto;
+  max-width: 480px;
+  min-height: 100dvh;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: var(--ink);
+  background: var(--cream);
+  font: 18px/1.4 var(--body);
+}
+
+#app { display: contents; }
+
+h1, h2, p { margin: 0; }
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo { image-rendering: pixelated; }
+
+h1 {
+  font: 600 28px/1 var(--pixel);
+  color: var(--green);
+  letter-spacing: 1px;
+}
+
+.place { font-size: 15px; }
+
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  background: #fffaf0;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+  padding: 14px 16px;
+}
+
+.label {
+  font: 700 14px/1.2 var(--body);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.next {
+  background: var(--green);
+  color: var(--cream);
+  border-top: 6px solid var(--gold);
+}
+
+.next-name {
+  margin-top: 4px;
+  font: 600 40px/1.1 var(--pixel);
+}
+
+.next-time { color: var(--gold); }
+
+.countdown {
+  font: 600 32px/1.2 var(--pixel);
+  font-variant-numeric: tabular-nums;
+}
+
+.current {
+  margin-top: 6px;
+  font-size: 16px;
+}
+
+.times {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.times li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 8px;
+  border-bottom: 2px dashed var(--cream-dark);
+}
+
+.times li:last-child { border-bottom: 0; }
+
+.times .is-minor { color: #555; font-size: 16px; }
+
+.times .is-now {
+  background: var(--green-light);
+  border: 2px solid var(--green);
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.t-time {
+  font: 700 20px/1 var(--body);
+  font-variant-numeric: tabular-nums;
+}
+
+.tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  font-size: 13px;
+  text-transform: uppercase;
+  color: var(--cream);
+  background: var(--green);
+  border-radius: 3px;
+}
+
+.foot {
+  margin-top: auto;
+  text-align: center;
+  font-size: 14px;
+  color: #444;
+}
+
+:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
