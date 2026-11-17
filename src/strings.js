@@ -57,13 +57,17 @@ export default {
   // Sections
   groupsTitle: (name) => `${name} groups`,
   comingButton: "I'm coming, wait for me",
-  friendsLabel: 'Friends with me:',
-  friendsLess: 'One friend less',
-  friendsMore: 'One friend more',
+
+  // "How many are you?" (boys only)
+  howMany: 'How many are you?',
+  howManyHint: 'Including you. Your friends are counted with you.',
+  justMe: 'Just me',
+  countLabel: (n) => (n === 1 ? 'Just me' : `${n} people: me and ${n - 1} ${n === 2 ? 'friend' : 'friends'}`),
+  withFriends: (n) => `you + ${n} ${n === 1 ? 'friend' : 'friends'}`,
+  changeCount: 'Change',
+  cancelDialog: 'Cancel',
 
   // Room drawing
-  roomTitle: (time) => `In the room · ${time} group`,
-  roomTitleLater: (time, min) => `In the room · ${time} group (starts in ${min} min)`,
   roomLabel: (boys, coming, girls) => `Prayer room: ${boys} ${boys === 1 ? 'boy' : 'boys'}${coming ? `, ${coming} on the way` : ''}. Girls: ${girls ? 'Yes' : 'No'}.`,
   legendHere: 'In the group',
   legendComing: 'On the way',

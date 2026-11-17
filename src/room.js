@@ -49,9 +49,13 @@ export function roomHtml({ boys, boysComing, girls }) {
       <rect class="room-curtain" x="8" y="${CURTAIN_Y}" width="${WIDTH - 16}" height="22" rx="2"/>
       <text class="room-girls" x="${cx}" y="${CURTAIN_Y + 16}" text-anchor="middle">${t.girls(girls)}</text>
     </svg>
-    <figcaption class="room-legend" aria-hidden="true">
-      <span><i class="key key-here"></i>${t.legendHere}</span>
-      <span><i class="key key-coming"></i>${t.legendComing}</span>
-    </figcaption>
   </figure>`;
+}
+
+// What the squares mean, shown once above the groups.
+export function legendHtml() {
+  return `<p class="room-legend" aria-hidden="true">
+    <span><i class="key key-here"></i>${t.legendHere}</span>
+    <span><i class="key key-coming"></i>${t.legendComing}</span>
+  </p>`;
 }

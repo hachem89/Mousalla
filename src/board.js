@@ -4,9 +4,8 @@ import { formatTime } from './prayer.js';
 import {
   prayerWindow, prayerKey, groupId, listGroups, comingGroupId, checkOwnTime, nearbyGroup, JOIN_AHEAD_MS,
 } from './groups.js';
-import config from './config.js';
 import { fetchBoard, joinGroup, leaveGroup } from './api.js';
-import { roomHtml } from './room.js';
+import { roomHtml, legendHtml } from './room.js';
 
 const MINUTE = 60000;
 const $ = (id) => document.getElementById(id);
@@ -19,6 +18,7 @@ const state = {
   error: null,
   suggest: null, // { start, group }: "a group already prays at ..., join it?"
   friends: 0, // friends coming with me
+  pending: null, // what to do once "How many are you?" is answered
 };
 
 let lastHtml = '';
@@ -74,31 +74,42 @@ export function updateBoard(prayer, now) {
   render(prayer, now);
 }
 
-async function join(id, joinState) {
+async function join(id, joinState = 'joined', friends = state.friends) {
   state.suggest = null;
+  state.friends = friends;
   $('own-error').textContent = '';
-  apply(await joinGroup(state.section, id, joinState, state.friends));
+  apply(await joinGroup(state.section, id, joinState, friends));
+}
+
+// Boys are asked "How many are you?" before joining, so their friends are counted.
+// Girls are not asked: girls are only ever Yes/No.
+function askHowMany(run) {
+  if (state.section !== 'boy') return run(0);
+  state.pending = run;
+  $('howmany').showModal();
 }
 
 async function onAction(e) {
   const b = e.target.closest('button[data-act]');
   if (!b) return;
   const { act, group } = b.dataset;
-  if (act === 'join') await join(group);
-  else if (act === 'coming') await join(group, 'going');
+  const mine = state.board?.mine;
+  if (act === 'join') askHowMany((f) => join(group, 'joined', f));
+  else if (act === 'coming') askHowMany((f) => join(group, 'going', f));
+  else if (act === 'create') {
+    const id = groupId(state.prayer, state.suggest.start);
+    askHowMany((f) => join(id, 'joined', f));
+  } else if (act === 'change-count' && mine) askHowMany((f) => join(mine.groupId, mine.state, f));
   else if (act === 'leave') apply(await leaveGroup(state.key));
-  else if (act === 'create') await join(groupId(state.prayer, state.suggest.start));
-  else if (act === 'friends-less' || act === 'friends-more') await changeFriends(act === 'friends-more' ? 1 : -1);
 }
 
-// "Friends with me": counted with my spot. If I already have one, it is updated.
-async function changeFriends(step) {
-  const friends = Math.min(config.maxFriends, Math.max(0, state.friends + step));
-  if (friends === state.friends) return;
-  state.friends = friends;
-  const mine = state.board?.mine;
-  if (mine) apply(await joinGroup(state.section, mine.groupId, mine.state, friends));
-  else render(state.prayer, Date.now());
+function onHowMany(e) {
+  const b = e.target.closest('button[data-count]');
+  if (!b) return;
+  $('howmany').close();
+  const run = state.pending;
+  state.pending = null;
+  run?.(Number(b.dataset.count) - 1);
 }
 
 // "Other time": check it is inside the prayer's time, then create the group,
@@ -125,7 +136,8 @@ async function onOwnTime(e) {
     state.suggest = { start: result.start, group: near };
     render(prayer, now);
   } else {
-    await join(groupId(prayer, result.start));
+    const id = groupId(prayer, result.start);
+    askHowMany((f) => join(id, 'joined', f));
   }
 }
 
@@ -133,6 +145,11 @@ export function initBoard() {
   $('board').addEventListener('click', onAction);
   $('own').addEventListener('click', onAction);
   $('own-form').addEventListener('submit', onOwnTime);
+  $('howmany').addEventListener('click', onHowMany);
+  $('howmany-cancel').addEventListener('click', () => {
+    state.pending = null;
+    $('howmany').close();
+  });
 }
 
 const minutesUntil = (date, now) => Math.ceil((date - now) / MINUTE);
@@ -146,14 +163,21 @@ function groupHtml(g, mine, now) {
   const button = isMine
     ? `<button class="btn btn-small btn-quiet" type="button" data-act="leave" aria-label="${t.leaveLabel(time)}">${t.leave}</button>`
     : `<button class="btn btn-small" type="button" data-act="join" data-group="${g.id}" aria-label="${t.groupLabel(time)}: ${mine ? t.joinInstead : t.join}">${mine ? t.joinInstead : t.join}</button>`;
+  const me = isMine
+    ? `<p class="g-me">${t.myState[mine.state]}${mine.friends ? ` · ${t.withFriends(mine.friends)}` : ''}</p>
+      ${state.section === 'boy' ? `<button class="btn btn-small btn-quiet" type="button" data-act="change-count">${t.changeCount}</button>` : ''}`
+    : '';
   return `<li class="group${isMine ? ' is-mine' : ''}">
-    <div class="g-main">
-      <p class="g-time">${time}</p>
-      <p class="g-info"><span class="g-when">${when}</span> · ${who}</p>
-      ${isMine ? `<p class="g-me">${t.myState[mine.state]}</p>` : ''}
-      ${g.coming ? `<p class="g-wait">${t.onTheWay}</p>` : ''}
+    <div class="g-top">
+      <div class="g-main">
+        <p class="g-time">${time}</p>
+        <p class="g-info"><span class="g-when">${when}</span> · ${who}</p>
+        ${me}
+        ${g.coming ? `<p class="g-wait">${t.onTheWay}</p>` : ''}
+      </div>
+      ${button}
     </div>
-    ${button}
+    ${roomHtml(g)}
   </li>`;
 }
 
@@ -185,27 +209,11 @@ function render(prayer, now) {
 
   let html = '';
   if (canJoin && state.board) {
-    // The room, drawn for the group praying now (mine first), or, when nobody is
-    // praying yet, for the next group (mine first).
-    const later = groups.filter((g) => !g.started);
-    const shown = praying.find((g) => g.id === mine?.groupId) ?? praying.at(-1)
-      ?? later.find((g) => g.id === mine?.groupId) ?? later[0];
-    if (shown) {
-      const time = formatTime(shown.start);
-      const title = shown.started ? t.roomTitle(time) : t.roomTitleLater(time, minutesUntil(shown.start, now));
-      html += `<h3 class="label sub-title">${title}</h3>${roomHtml(shown)}`;
-    }
-    // One list for all groups of this prayer; each row says "Praying now" or "Starts in N min".
+    // Every group of this prayer, each with its room drawing.
     if (groups.length) {
-      html += `<h3 class="label sub-title">${t.groupsTitle(t.names[prayer.name])}</h3>
+      html += `<h3 class="label sub-title">${t.groupsTitle(t.names[prayer.name])}</h3>${legendHtml()}
         <ul class="groups">${groups.map((g) => groupHtml(g, mine, now)).join('')}</ul>`;
     }
-    html += `<div class="friends" role="group" aria-labelledby="friends-label">
-        <span id="friends-label">${t.friendsLabel}</span>
-        <button class="btn btn-small" type="button" data-act="friends-less" aria-label="${t.friendsLess}"${state.friends === 0 ? ' disabled' : ''}>−</button>
-        <output aria-live="polite">${state.friends}</output>
-        <button class="btn btn-small" type="button" data-act="friends-more" aria-label="${t.friendsMore}"${state.friends === config.maxFriends ? ' disabled' : ''}>+</button>
-      </div>`;
     if (comingId && mine?.state !== 'going') {
       html += `<button class="btn btn-primary btn-big btn-coming" type="button" data-act="coming" data-group="${comingId}">${t.comingButton}</button>`;
     }

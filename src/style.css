@@ -174,14 +174,15 @@ main {
 
 .group {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 8px;
   padding: 10px 12px;
   background: var(--cream);
   border: 2px solid var(--ink);
   border-radius: 6px;
 }
 
+.g-top { display: flex; align-items: flex-start; gap: 10px; }
 .g-main { flex: 1; display: flex; flex-direction: column; gap: 4px; }
 .g-info { font-size: 16px; }
 .g-time { font: 400 34px/1 var(--pixel); font-variant-numeric: tabular-nums; }
@@ -204,7 +205,7 @@ main {
 
 /* Room drawing */
 
-.room { margin: 0 0 6px; }
+.room { margin: 0; }
 .room svg { display: block; width: 100%; max-width: 180px; height: auto; margin: 0 auto; }
 .room-floor { fill: #fffaf0; stroke: var(--ink); stroke-width: 2; }
 .room-mihrab { fill: var(--gold); }
@@ -220,7 +221,7 @@ main {
   display: flex;
   justify-content: center;
   gap: 16px;
-  margin-top: 6px;
+  margin: 0 0 8px;
   font-size: 14px;
 }
 
@@ -229,19 +230,27 @@ main {
 .key-here { background: var(--green); }
 .key-coming { background: var(--cream); border-style: dashed; }
 
-/* Friends with me */
+/* How many are you? */
 
-.friends {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 14px;
-  font-weight: 700;
+.howmany-title { font: 400 34px/1 var(--pixel); color: var(--green); }
+
+.count-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
 }
 
-.friends .btn { width: 48px; padding: 0; font-size: 22px; }
-.friends .btn:disabled { opacity: 0.4; cursor: default; }
-.friends output { min-width: 2ch; text-align: center; font: 400 30px/1 var(--pixel); }
+.count-grid .btn { min-height: 56px; padding: 0; font: 400 30px/1 var(--pixel); }
+.count-grid .count-me {
+  grid-column: span 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--cream);
+  background: var(--green);
+}
+.count-grid .count-me small { font: 700 16px var(--body); }
 
 /* I'm coming */
 
