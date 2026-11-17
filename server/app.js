@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import express from 'express';
 import serverConfig from './config.js';
 import appConfig from '../src/config.js';
-import { createBoard, parseSlot, isPrayerKey, SECTIONS, STATES } from './board.js';
+import { createBoard, parseGroup, isPrayerKey, SECTIONS, STATES } from './board.js';
 
 const TOKEN_RE = /^[a-f0-9]{32}$/;
 const MINUTE = 60000;
@@ -70,17 +70,17 @@ export function createApp({ now = () => Date.now(), staticDir, config = serverCo
   });
 
   app.post('/api/join', (req, res) => {
-    const { section, slotId, state = 'joined', eta = 0 } = req.body ?? {};
+    const { section, groupId, state = 'joined', eta = 0 } = req.body ?? {};
     const t = now();
     if (!SECTIONS.includes(section)) return fail(res, 400, 'bad_section');
     if (!STATES.includes(state)) return fail(res, 400, 'bad_state');
     if (state === 'going' && !appConfig.arrivalOptions.includes(eta)) return fail(res, 400, 'bad_eta');
-    const slot = parseSlot(slotId, t);
-    if (!slot) return fail(res, 400, 'bad_slot');
-    // "Going now" and "I'm here" only make sense for the slot happening now.
-    if (state !== 'joined' && slot.start > t) return fail(res, 400, 'not_started');
-    if (!board.join(req.tokenHash, section, slot, t, state, eta)) return fail(res, 503, 'board_full');
-    res.json(board.view(req.tokenHash, slot.prayer, t));
+    const group = parseGroup(groupId, t);
+    if (!group) return fail(res, 400, 'bad_group');
+    // "On my way" and "I'm here" only make sense once the group's time has come.
+    if (state !== 'joined' && group.start > t) return fail(res, 400, 'not_started');
+    if (!board.join(req.tokenHash, section, group, t, state, eta)) return fail(res, 503, 'board_full');
+    res.json(board.view(req.tokenHash, group.prayer, t));
   });
 
   app.post('/api/cancel', (req, res) => {
