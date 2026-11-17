@@ -193,6 +193,13 @@ describe('invalid input', () => {
     expect((await api(newToken(), '/api/join', big)).status).toBe(413);
   });
 
+  it('health check answers without a token and reveals nothing', async () => {
+    await join(newToken(), 'boy', GROUP_A);
+    const res = await fetch(base + '/health');
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe('ok');
+  });
+
   it('unknown api routes are 404', async () => {
     expect((await api(newToken(), '/api/nope')).status).toBe(404);
   });

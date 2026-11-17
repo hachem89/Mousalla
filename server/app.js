@@ -42,6 +42,12 @@ export function createApp({ now = () => Date.now(), staticDir, config = serverCo
 
   const fail = (res, status, error) => res.status(status).json({ error });
 
+  // For an uptime pinger: keeps a free host from sleeping. Says nothing about the board.
+  app.get('/health', (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.type('text/plain').send('ok');
+  });
+
   app.use('/api', (req, res, next) => {
     res.set('Cache-Control', 'no-store');
     const token = req.get('x-device-token') || '';
