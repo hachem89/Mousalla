@@ -55,7 +55,8 @@ Contents: [How it works](#how-it-works) · [Privacy](#privacy) ·
 - **Prayer windows**: people can pray together from the adhan until 5 minutes
   before the next prayer. Fajr ends 5 minutes before sunrise, Isha 5 minutes
   before the next Fajr. The board shows the current prayer during its window,
-  then the next prayer. Groups can be joined up to 2 hours ahead.
+  then the next prayer. Any time inside the prayer's window can be chosen,
+  however far ahead.
 - **Imam banner**: on the Boys' view, when a group praying now has at least
   one girl (joined or coming), a big banner says "Girls are praying behind you
   today. Please pray aloud."
@@ -159,7 +160,8 @@ friends are never counted), `coming` = true/false, someone said "I'm coming".
 Group ids are made by the phone: date, prayer and time (Tunis), any minute. The
 first person to choose a time creates the group; there is nothing else to
 create. The server does not compute prayer times; it only checks the id format
-and that the time is within 2 hours of now, and forgets the spot when the group
+and that the time is within 12 hours of now (the app keeps it inside the
+prayer window), and forgets the spot when the group
 is over (time + `groupMinutes`).
 
 ## How prayer times are computed
