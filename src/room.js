@@ -27,7 +27,7 @@ const PLACES = (() => {
 })();
 
 const CURTAIN_Y = PLACES.at(-1).y + CELL + 6;
-const HEIGHT = CURTAIN_Y + 28;
+const HEIGHT = CURTAIN_Y + 30;
 
 export function roomHtml({ boys, boysComing, girls }) {
   const here = boys - boysComing;
@@ -46,8 +46,8 @@ export function roomHtml({ boys, boysComing, girls }) {
       <rect class="room-floor" x="2" y="2" width="${WIDTH - 4}" height="${HEIGHT - 4}" rx="4"/>
       <path class="room-mihrab" d="M${cx - 14} 26V14h4v-4h4v-4h12v4h4v4h4v12z"/>
       ${spots}${more}
-      <rect class="room-curtain" x="8" y="${CURTAIN_Y}" width="${WIDTH - 16}" height="20" rx="2"/>
-      <text class="room-girls" x="${cx}" y="${CURTAIN_Y + 14}" text-anchor="middle">${t.girls(girls)}</text>
+      <rect class="room-curtain" x="8" y="${CURTAIN_Y}" width="${WIDTH - 16}" height="22" rx="2"/>
+      <text class="room-girls" x="${cx}" y="${CURTAIN_Y + 16}" text-anchor="middle">${t.girls(girls)}</text>
     </svg>
     <figcaption class="room-legend" aria-hidden="true">
       <span><i class="key key-here"></i>${t.legendHere}</span>
