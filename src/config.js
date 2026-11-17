@@ -37,6 +37,9 @@ export default {
   // A "coming" spot expires this many minutes after the tap.
   comingExpiresMinutes: 7,
 
+  // Someone can say how many friends come with them (0 to this many).
+  maxFriends: 10,
+
   // How often the board is refreshed (milliseconds).
   pollMs: 5000,
 };

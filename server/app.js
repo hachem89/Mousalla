@@ -67,15 +67,16 @@ export function createApp({ now = () => Date.now(), staticDir, config = serverCo
   });
 
   app.post('/api/join', (req, res) => {
-    const { section, groupId, state = 'joined' } = req.body ?? {};
+    const { section, groupId, state = 'joined', friends = 0 } = req.body ?? {};
     const t = now();
     if (!SECTIONS.includes(section)) return fail(res, 400, 'bad_section');
     if (!STATES.includes(state)) return fail(res, 400, 'bad_state');
+    if (!Number.isInteger(friends) || friends < 0 || friends > appConfig.maxFriends) return fail(res, 400, 'bad_friends');
     const group = parseGroup(groupId, t);
     if (!group) return fail(res, 400, 'bad_group');
     // "I'm coming" means arriving in about 2 minutes: only for a group that is still on by then.
     if (state === 'going' && group.end - t < appConfig.comingMinutes * 60000) return fail(res, 400, 'too_late');
-    if (!board.join(req.tokenHash, section, group, t, state)) return fail(res, 503, 'board_full');
+    if (!board.join(req.tokenHash, section, group, t, state, friends)) return fail(res, 503, 'board_full');
     res.json(board.view(req.tokenHash, group.prayer, t));
   });
 

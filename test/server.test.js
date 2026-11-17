@@ -12,7 +12,7 @@ let server;
 let base;
 let n = 0;
 
-const group = (boys, extra = {}) => ({ boys, girls: false, coming: false, ...extra });
+const group = (boys, extra = {}) => ({ boys, boysComing: 0, girls: false, coming: false, ...extra });
 const newToken = () => (++n).toString(16).padStart(32, 'a');
 
 async function start(config = serverConfig) {
@@ -49,7 +49,7 @@ describe('join, move, cancel', () => {
     const me = newToken();
     const r = await join(me, 'boy', GROUP_A);
     expect(r.status).toBe(200);
-    expect(r.body).toEqual({ groups: { [GROUP_A]: group(1) }, mine: { groupId: GROUP_A, state: 'joined' } });
+    expect(r.body).toEqual({ groups: { [GROUP_A]: group(1) }, mine: { groupId: GROUP_A, state: 'joined', friends: 0 } });
 
     const other = await board(newToken());
     expect(other.body).toEqual({ groups: { [GROUP_A]: group(1) }, mine: null });
@@ -60,7 +60,7 @@ describe('join, move, cancel', () => {
     await join(me, 'boy', GROUP_A);
     await join(me, 'boy', GROUP_A);
     const r = await join(me, 'boy', GROUP_B);
-    expect(r.body).toEqual({ groups: { [GROUP_B]: group(1) }, mine: { groupId: GROUP_B, state: 'joined' } });
+    expect(r.body).toEqual({ groups: { [GROUP_B]: group(1) }, mine: { groupId: GROUP_B, state: 'joined', friends: 0 } });
   });
 
   it('cancels', async () => {
@@ -110,7 +110,7 @@ describe('girls are never counted', () => {
     for (const r of [joined, await board(girl), await board(newToken()), await cancel(newToken())]) {
       expect(r.body.groups[GROUP_A]).toEqual(group(2, { girls: true }));
       for (const s of Object.values(r.body.groups)) {
-        expect(Object.keys(s).sort()).toEqual(['boys', 'coming', 'girls']);
+        expect(Object.keys(s).sort()).toEqual(['boys', 'boysComing', 'coming', 'girls']);
         expect(typeof s.girls).toBe('boolean');
       }
     }
@@ -241,8 +241,8 @@ describe("I'm coming", () => {
     await join(newToken(), 'boy', GROUP_A);
     const me = newToken();
     const r = await coming(me, 'boy', GROUP_A);
-    expect(r.body.groups[GROUP_A]).toEqual({ boys: 2, girls: false, coming: true });
-    expect(r.body.mine).toEqual({ groupId: GROUP_A, state: 'going' });
+    expect(r.body.groups[GROUP_A]).toEqual({ boys: 2, boysComing: 1, girls: false, coming: true });
+    expect(r.body.mine).toEqual({ groupId: GROUP_A, state: 'going', friends: 0 });
   });
 
   it('girls who are coming are still only yes/no', async () => {
@@ -251,14 +251,14 @@ describe("I'm coming", () => {
     await coming(newToken(), 'girl', GROUP_A);
     await coming(newToken(), 'girl', GROUP_A);
     const b = await board(newToken());
-    expect(a.body.groups[GROUP_A]).toEqual({ boys: 0, girls: true, coming: true });
+    expect(a.body.groups[GROUP_A]).toEqual({ boys: 0, boysComing: 0, girls: true, coming: true });
     expect(b.body.groups[GROUP_A]).toEqual(a.body.groups[GROUP_A]);
   });
 
   it('"coming" expires 7 minutes after the tap', async () => {
     await coming(newToken(), 'boy', GROUP_A);
     clock = tunis('12:12:59');
-    expect((await board(newToken())).body.groups[GROUP_A]).toEqual({ boys: 1, girls: false, coming: true });
+    expect((await board(newToken())).body.groups[GROUP_A]).toEqual({ boys: 1, boysComing: 1, girls: false, coming: true });
     clock = tunis('12:13:00');
     expect((await board(newToken())).body.groups).toEqual({});
   });
@@ -282,7 +282,7 @@ describe("I'm coming", () => {
   it('can start a new group a few minutes from now', async () => {
     const r = await coming(newToken(), 'boy', '2026-11-17:dhuhr:12:08');
     expect(r.status).toBe(200);
-    expect(r.body.groups['2026-11-17:dhuhr:12:08']).toEqual({ boys: 1, girls: false, coming: true });
+    expect(r.body.groups['2026-11-17:dhuhr:12:08']).toEqual({ boys: 1, boysComing: 1, girls: false, coming: true });
   });
 
   it('rejects bad states', async () => {
@@ -302,6 +302,33 @@ describe('Isha after midnight', () => {
     expect((await board(newToken(), '2026-11-17:isha')).body.groups['2026-11-17:isha:00:20'].boys).toBe(1);
     clock = tunis('00:35:00', '2026-11-18');
     expect((await board(newToken(), '2026-11-17:isha')).body.groups).toEqual({});
+  });
+});
+
+describe('friends', () => {
+  it("count boys' friends, joined or coming", async () => {
+    clock = tunis('12:06:00');
+    await api(newToken(), '/api/join', { section: 'boy', groupId: GROUP_A, friends: 3 });
+    const r = await api(newToken(), '/api/join', { section: 'boy', groupId: GROUP_A, state: 'going', friends: 6 });
+    expect(r.body.groups[GROUP_A]).toEqual({ boys: 11, boysComing: 7, girls: false, coming: true });
+    expect(r.body.mine).toEqual({ groupId: GROUP_A, state: 'going', friends: 6 });
+  });
+
+  it("never count girls' friends", async () => {
+    await api(newToken(), '/api/join', { section: 'girl', groupId: GROUP_A, friends: 1 });
+    const a = await board(newToken());
+    await api(newToken(), '/api/join', { section: 'girl', groupId: GROUP_A, friends: 9 });
+    const b = await board(newToken());
+    expect(a.body.groups[GROUP_A]).toEqual(group(0, { girls: true }));
+    expect(b.body).toEqual(a.body);
+  });
+
+  it('must be a whole number from 0 to 10', async () => {
+    for (const friends of [-1, 11, 2.5, '3', null, true]) {
+      const r = await api(newToken(), '/api/join', { section: 'boy', groupId: GROUP_A, friends });
+      expect(r.status, String(friends)).toBe(400);
+    }
+    expect((await api(newToken(), '/api/join', { section: 'boy', groupId: GROUP_A, friends: 10 })).status).toBe(200);
   });
 });
 
