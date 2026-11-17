@@ -5,8 +5,10 @@ A live board for the prayer room at INSAT (Tunis).
 It shows the prayer times and lets people say when they will come and pray, so
 others can join them and wait for each other.
 
-> Status: **Phase 3** – prayer times, live board, "I'm here" / "Going now",
-> imam banner, installable and works offline. Next: deployment.
+Contents: [How it works](#how-it-works) · [Privacy](#privacy) ·
+[Run it](#run-it) · [Configuration](#configuration) ·
+[Prayer times](#how-prayer-times-are-computed) · [Deploy](#deploy) ·
+[Poster](#poster-for-the-room) · [Project layout](#project-layout)
 
 ## How it works
 
@@ -50,8 +52,8 @@ These are promises, not goals:
   joining twice.
 - The server keeps, **in memory only** (never on disk): a salted hash of the
   token, boy/girl, the slot, a state (joined / going / here, with the arrival
-  estimate) and an expiry time. Every spot disappears
-  when its slot ends. A restart wipes everything.
+  estimate) and an expiry time. Every spot disappears when its slot ends. A
+  restart wipes everything.
 - **Girls are never counted.** The server itself only ever sends "girls: yes or
   no" per slot; the number of girls never leaves it. Boys' counts are public.
 - The server does not log requests, IP addresses or tokens. IPs and tokens are
@@ -150,4 +152,58 @@ The tests compare the results with independently computed reference values for
 
 ## Deploy
 
-Coming in Phase 4.
+The app is one small Node server with everything in memory, so it must run as
+**a single instance**. The simplest free host is [Render](https://render.com);
+the repository already contains a [`render.yaml`](render.yaml).
+
+1. Create a free account on render.com (sign in with GitHub).
+2. Click **New → Blueprint**, pick this repository, and click **Apply**.
+   Render reads `render.yaml`: it runs `npm ci && npm run build`, then
+   `npm start`, in Frankfurt (closest to Tunis), with `TRUST_PROXY=1`.
+3. Wait for the first deploy (a few minutes). Your app is at
+   `https://<service-name>.onrender.com`.
+4. Every push to `main` deploys again automatically.
+
+Good to know about the free plan:
+
+- After 15 minutes without visitors the server sleeps; the next visit wakes it
+  in about a minute. Installed phones still open instantly (the app is cached)
+  and show "Offline… Retrying" until the server is awake.
+- Sleeping or redeploying wipes the board. That is fine: spots only live for
+  one prayer anyway.
+- Rate limiting by IP relies on `TRUST_PROXY=1`. If every visitor seems to share
+  one address, raise it to match the number of proxies in front of the app.
+
+Any other host that runs `npm ci && npm run build` then `npm start` works the
+same way (set `PORT` if the host requires it). Avoid serverless hosts: the board
+needs one long-running process.
+
+## Poster for the room
+
+Open `/poster.html` on the deployed site (for example
+`https://<service-name>.onrender.com/poster.html`) and click **Print this
+poster**. It fits one A4 page and its QR code points to the site you opened it
+from. To make a poster for another address, add `?url=`:
+`/poster.html?url=https://example.org/`.
+
+## Project layout
+
+```
+index.html, poster.html   pages
+src/config.js             app settings (location, angles, offsets, slots)
+src/strings.js            all UI text
+src/prayer.js             prayer times (adhan) and Tunis time helpers
+src/slots.js              which prayer the board shows, slot list
+src/main.js, style.css    the app screen
+src/device.js, api.js     Boy/Girl choice, device token, server calls
+src/sw.js                 offline cache (filled in at build time)
+src/poster.js, poster.css printable QR poster
+server/                   Express server, in-memory board, rate limits
+scripts/                  print times, draw icons
+test/                     prayer times, slots, server
+render.yaml               Render deploy settings
+```
+
+## License
+
+MIT.
