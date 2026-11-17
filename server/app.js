@@ -2,7 +2,8 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import express from 'express';
 import serverConfig from './config.js';
-import { createBoard, parseSlot, isPrayerKey, SECTIONS } from './board.js';
+import appConfig from '../src/config.js';
+import { createBoard, parseSlot, isPrayerKey, SECTIONS, STATES } from './board.js';
 
 const TOKEN_RE = /^[a-f0-9]{32}$/;
 const MINUTE = 60000;
@@ -69,12 +70,16 @@ export function createApp({ now = () => Date.now(), staticDir, config = serverCo
   });
 
   app.post('/api/join', (req, res) => {
-    const { section, slotId } = req.body ?? {};
+    const { section, slotId, state = 'joined', eta = 0 } = req.body ?? {};
     const t = now();
     if (!SECTIONS.includes(section)) return fail(res, 400, 'bad_section');
+    if (!STATES.includes(state)) return fail(res, 400, 'bad_state');
+    if (state === 'going' && !appConfig.arrivalOptions.includes(eta)) return fail(res, 400, 'bad_eta');
     const slot = parseSlot(slotId, t);
     if (!slot) return fail(res, 400, 'bad_slot');
-    if (!board.join(req.tokenHash, section, slot, t)) return fail(res, 503, 'board_full');
+    // "Going now" and "I'm here" only make sense for the slot happening now.
+    if (state !== 'joined' && slot.start > t) return fail(res, 400, 'not_started');
+    if (!board.join(req.tokenHash, section, slot, t, state, eta)) return fail(res, 503, 'board_full');
     res.json(board.view(req.tokenHash, slot.prayer, t));
   });
 
@@ -88,7 +93,15 @@ export function createApp({ now = () => Date.now(), staticDir, config = serverCo
 
   app.use('/api', (req, res) => fail(res, 404, 'not_found'));
 
-  if (staticDir && fs.existsSync(staticDir)) app.use(express.static(staticDir));
+  if (staticDir && fs.existsSync(staticDir)) {
+    app.use(express.static(staticDir, {
+      setHeaders(res, file) {
+        // Built files have a hash in their name, so they never change. Everything else is rechecked.
+        const cache = /[\\/]assets[\\/]/.test(file) ? 'public, max-age=31536000, immutable' : 'no-cache';
+        res.set('Cache-Control', cache);
+      },
+    }));
+  }
 
   // Bad JSON, oversized bodies, etc. Nothing is logged.
   app.use((err, req, res, next) => {
