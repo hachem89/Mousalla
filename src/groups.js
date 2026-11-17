@@ -14,6 +14,12 @@ export function boardPrayer(status, now, cfg = config) {
   return { name: status.next.name, time: status.next.time };
 }
 
+// From the adhan to the end of the time people can still come and pray together.
+export function prayerWindow(prayer, cfg = config) {
+  const start = prayer.time.getTime();
+  return { start, end: start + cfg.windows[prayer.name] * MINUTE };
+}
+
 // "2026-11-17:dhuhr"
 export function prayerKey(prayer) {
   return `${localDate(prayer.time)}:${prayer.name}`;
@@ -30,37 +36,42 @@ export function groupStart(id) {
   return new Date(`${date}T${hh}:${mm}:00+01:00`);
 }
 
-// Groups of this prayer from the server data, by time, without the ones already over.
+// Groups of this prayer, by time, without the ones already over.
+// The main group (at the adhan) is always there, even when nobody joined it yet.
 export function listGroups(prayer, data, now, cfg = config) {
   const prefix = `${prayerKey(prayer)}:`;
-  return Object.entries(data?.groups ?? {})
+  const mainId = groupId(prayer, prayer.time);
+  const groups = { [mainId]: { boys: 0, girls: false, wait: null }, ...data?.groups };
+  return Object.entries(groups)
     .filter(([id]) => id.startsWith(prefix))
-    .map(([id, counts]) => ({ ...counts, id, start: groupStart(id) }))
+    .map(([id, counts]) => ({ ...counts, id, start: groupStart(id), isMain: id === mainId }))
     .filter((g) => g.start.getTime() + cfg.groupMinutes * MINUTE > now)
     .map((g) => ({ ...g, started: g.start.getTime() <= now }))
     .sort((a, b) => a.start - b.start);
 }
 
-// Times someone can pick: "now" once the prayer has started (or the adhan before),
-// then every 5 minutes on the clock until the end of the prayer's window.
-// Only times up to 2 hours ahead.
-export function timeChoices(prayer, now, cfg = config) {
-  const adhan = prayer.time.getTime();
-  const end = adhan + cfg.windows[prayer.name] * MINUTE;
-  const step = cfg.pickStepMinutes * MINUTE;
-  const first = now >= adhan ? Math.floor(now / MINUTE) * MINUTE : adhan;
-  if (first >= end || first - now > JOIN_AHEAD_MS) return [];
+// Where "I'm coming in N min" goes: the group that started most recently,
+// or, when nobody is praying now, a new group starting in N minutes.
+// null when the prayer has not started yet or its window is over.
+export function comingGroupId(prayer, groups, eta, now, cfg = config) {
+  const { start, end } = prayerWindow(prayer, cfg);
+  if (now < start || now >= end) return null;
+  const active = groups.filter((g) => g.started).at(-1);
+  if (active) return active.id;
+  const at = Math.floor(now / MINUTE) * MINUTE + eta * MINUTE;
+  return at < end ? groupId(prayer, new Date(at)) : null;
+}
 
-  const times = [first];
-  // Leave at least 3 minutes between the first choice and the next one.
-  for (let t = Math.ceil((first + 3 * MINUTE) / step) * step; t < end && t - now <= JOIN_AHEAD_MS; t += step) {
-    times.push(t);
-  }
-  return times.map((t, i) => ({
-    id: groupId(prayer, new Date(t)),
-    start: new Date(t),
-    isNow: i === 0 && now >= adhan,
-  }));
+// A time typed by the user ("12:40") -> { start } or { error }.
+// It must be inside the prayer's window, not in the past, and at most 2 hours ahead.
+export function checkOwnTime(value, prayer, now, cfg = config) {
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(value || '')) return { error: 'empty' };
+  const start = new Date(`${localDate(prayer.time)}T${value}:00+01:00`);
+  const { start: from, end } = prayerWindow(prayer, cfg);
+  if (start < from || start >= end) return { error: 'outside' };
+  if (start.getTime() < Math.floor(now / MINUTE) * MINUTE) return { error: 'past' };
+  if (start - now > JOIN_AHEAD_MS) return { error: 'too_early' };
+  return { start };
 }
 
 // The existing group closest to a time, if it is within a few minutes of it.
