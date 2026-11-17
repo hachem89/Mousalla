@@ -53,6 +53,16 @@ describe('groups', () => {
     expect(g[2].started).toBe(false);
   });
 
+  it('ignores groups outside the prayer time (before the adhan or after the window)', () => {
+    const d = { groups: {
+      '2026-11-17:dhuhr:11:50': { boys: 2, girls: true, wait: null },
+      '2026-11-17:dhuhr:13:19': { boys: 1, girls: false, wait: null },
+      '2026-11-17:dhuhr:13:18': { boys: 1, girls: false, wait: null },
+    } };
+    const g = listGroups(dhuhr, d, at('11:55:00'));
+    expect(g.map((x) => x.id)).toEqual([MAIN, '2026-11-17:dhuhr:13:18']);
+  });
+
   it('drops groups that are over, the main group too', () => {
     const g = listGroups(dhuhr, data, at('12:22:00'));
     expect(g.map((x) => x.id)).toEqual(['2026-11-17:dhuhr:12:40']);

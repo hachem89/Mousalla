@@ -38,13 +38,16 @@ export function groupStart(id) {
 
 // Groups of this prayer, by time, without the ones already over.
 // The main group (at the adhan) is always there, even when nobody joined it yet.
+// Groups outside the prayer's time (before the adhan or after its window) are ignored.
 export function listGroups(prayer, data, now, cfg = config) {
   const prefix = `${prayerKey(prayer)}:`;
   const mainId = groupId(prayer, prayer.time);
+  const { start, end } = prayerWindow(prayer, cfg);
   const groups = { [mainId]: { boys: 0, girls: false, wait: null }, ...data?.groups };
   return Object.entries(groups)
     .filter(([id]) => id.startsWith(prefix))
     .map(([id, counts]) => ({ ...counts, id, start: groupStart(id), isMain: id === mainId }))
+    .filter((g) => g.start.getTime() >= start && g.start.getTime() < end)
     .filter((g) => g.start.getTime() + cfg.groupMinutes * MINUTE > now)
     .map((g) => ({ ...g, started: g.start.getTime() <= now }))
     .sort((a, b) => a.start - b.start);
