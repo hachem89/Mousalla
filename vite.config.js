@@ -10,7 +10,7 @@ function serviceWorker() {
     apply: 'build',
     generateBundle(_, bundle) {
       const built = Object.keys(bundle)
-        .filter((f) => f !== 'index.html' && !f.endsWith('.woff')) // phones that run the app use .woff2
+        .filter((f) => !f.endsWith('.html') && !f.endsWith('.woff')) // phones that run the app use .woff2
         .map((f) => `/${f}`);
       const assets = ['/', ...built, '/icon.svg', '/icon-192.png', '/icon-512.png', '/manifest.webmanifest'];
       const template = readFileSync('src/sw.js', 'utf8');
@@ -28,6 +28,11 @@ function serviceWorker() {
 
 export default defineConfig({
   plugins: [serviceWorker()],
+  build: {
+    rollupOptions: {
+      input: { main: 'index.html', poster: 'poster.html' },
+    },
+  },
   server: {
     proxy: { '/api': 'http://localhost:3000' },
   },

@@ -69,6 +69,19 @@ export default {
 
   install: 'Install app',
 
+  // Printable poster for the prayer room
+  poster: {
+    print: 'Print this poster',
+    lead: 'Prayer times, and who is coming to pray. Pray together, wait for each other.',
+    qrLabel: (url) => `QR code for ${url}`,
+    steps: [
+      'Scan the code',
+      'Choose Boy or Girl',
+      'Tap the time you will pray, or "I\'m here"',
+    ],
+    privacy: 'No account, no name, no location. Girls are never counted: only "Yes" or "No" is shown.',
+  },
+
   errors: {
     offline: "Offline: can't reach the board. Prayer times still work. Retrying…",
     too_many_requests: 'Too many taps. Wait a minute.',

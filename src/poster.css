@@ -1,0 +1,121 @@
+:root {
+  --cream: #f6efdc;
+  --green: #1f4d3a;
+  --gold: #c9a227;
+  --ink: #1b1b1b;
+  --pixel: 'Pixelify Sans', monospace;
+  --body: 'Atkinson Hyperlegible', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+@page { size: A4 portrait; margin: 12mm; }
+
+html { background: #ddd5c0; }
+
+body {
+  margin: 0;
+  padding: 16px;
+  color: var(--ink);
+  font: 18px/1.4 var(--body);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+h1, p { margin: 0; }
+
+.print {
+  display: block;
+  margin: 0 auto 16px;
+  min-height: 48px;
+  padding: 0 24px;
+  font: 700 18px var(--body);
+  color: var(--cream);
+  background: var(--green);
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: pointer;
+}
+
+.print:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+.sheet {
+  width: 100%;
+  max-width: 186mm;
+  min-height: 270mm;
+  margin: 0 auto;
+  padding: 14mm 12mm;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8mm;
+  text-align: center;
+  background: var(--cream);
+  border: 2mm solid var(--green);
+  border-top-width: 6mm;
+  border-top-color: var(--gold);
+  border-radius: 3mm;
+}
+
+header img { image-rendering: pixelated; }
+
+h1 {
+  font: 600 64px/1 var(--pixel);
+  color: var(--green);
+}
+
+.sub { font-size: 24px; }
+
+.lead { font-size: 28px; font-weight: 700; max-width: 150mm; }
+
+.qr {
+  width: 100mm;
+  max-width: 100%;
+  height: auto;
+  padding: 3mm;
+  background: #fff;
+  border: 1mm solid var(--ink);
+}
+
+.url {
+  font: 700 22px var(--body);
+  word-break: break-all;
+}
+
+.steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+  display: flex;
+  gap: 6mm;
+  font-size: 18px;
+}
+
+.steps li { flex: 1; counter-increment: step; }
+
+.steps li::before {
+  content: counter(step);
+  display: block;
+  margin: 0 auto 2mm;
+  width: 12mm;
+  height: 12mm;
+  font: 600 28px/12mm var(--pixel);
+  color: var(--cream);
+  background: var(--green);
+  border-radius: 2mm;
+}
+
+.privacy { margin-top: auto; font-size: 15px; color: #444; }
+
+@media print {
+  html, body { background: #fff; padding: 0; }
+  .print { display: none; }
+  .sheet { min-height: 0; height: 271mm; }
+}
+
+@media (max-width: 600px) {
+  .steps { flex-direction: column; }
+  h1 { font-size: 44px; }
+}
